@@ -1,0 +1,17 @@
+root = true
+
+[*.{cs,vb}]
+# noinspection EditorConfigKeyCorrectness
+dotnet_diagnostic.CA2000.severity = warning
+
+[{*Tests.cs,*.Payloads.cs}]
+
+# It is correct..
+# noinspection EditorConfigKeyCorrectness
+resharper_unused_member_global_highlighting = none
+
+# noinspection EditorConfigKeyCorrectness
+resharper_unused_type_global_highlighting = none
+
+# noinspection EditorConfigKeyCorrectness
+resharper_not_disposed_resource_highlighting = none
