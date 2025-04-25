@@ -1,0 +1,50 @@
+﻿@page "/history"
+@using PiFanCtrl.Interfaces
+@using PiFanCtrl.Model
+@attribute [StreamRendering]
+@inject ITemperatureStore TemperatureStore
+
+<PageTitle>Temperature History</PageTitle>
+
+<h1>Temperature History</h1>
+
+@if (_readings == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th aria-label="Temperature">Value</th>
+            <th>Sensor</th>
+            <th>Is Override</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var reading in _readings)
+        {
+            <tr>
+                <td>@reading.AsOf.ToString("o")</td>
+                <td>@reading.Value</td>
+                <td>@reading.Sensor</td>
+                <td>@reading.IsOverride</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private TemperatureReading[]? _readings;
+
+    protected override Task OnInitializedAsync()
+    {
+        _readings = TemperatureStore.GetAll().ToArray();
+        return Task.CompletedTask;
+    }
+}
