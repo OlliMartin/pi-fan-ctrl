@@ -15,9 +15,8 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
   private readonly ILogger _logger;
   private readonly IOptions<FanRpmPinConfiguration> _pinOptions;
 
-  private readonly Stopwatch _lastFallingEdge = Stopwatch.StartNew();
-  private double _lastReading = 0;
-
+  private readonly Stopwatch _lastMeasurement = Stopwatch.StartNew();
+  
   public GpioFanRpmSensor(ILogger<GpioFanRpmSensor> logger, IOptions<FanRpmPinConfiguration> pinOptions)
   {
     _logger = logger;
@@ -35,28 +34,25 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
 
   public Task<FanRpmReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
   {
+    var interruptCount = Interlocked.Exchange(ref _interruptsSinceLastMeasurement, 0);
+    var duration = _lastMeasurement.Elapsed;
+    _lastMeasurement.Restart();
+    
+    var rpm = (interruptCount / 2m) / ((decimal)duration.TotalNanoseconds * (decimal)TimeSpan.FromMinutes(1).TotalNanoseconds);
+    
+    _logger.LogDebug("{cnt} interrupts occurred in {duration}, RPM is: {rpm}", interruptCount, duration, rpm);
+    
     return Task.FromResult<FanRpmReading?>(new()
     {
       Sensor = Name,
-      Value = (decimal)_lastReading
+      Value = rpm
     });
   }
-
-  private int _preventSpam = 0;
-
+  
+  private int _interruptsSinceLastMeasurement = 0;
   private void OnSignalPinFallEvent(object sender, PinValueChangedEventArgs args)
   {
-    var elapsed = _lastFallingEdge.Elapsed;
-    _lastFallingEdge.Restart();
-
-    var freq = 1_000_000_000 / elapsed.TotalNanoseconds;
-    _lastReading = (freq / 2) * 60;
-
-    if (_preventSpam++ % 100 == 0)
-    {
-      _logger.LogInformation("[{time:O}] Calculated RPM {rpm} (Elapsed={elapsed}).", DateTime.Now,
-        _lastReading, elapsed);
-    }
+    Interlocked.Increment(ref _interruptsSinceLastMeasurement);
   }
 
   public void Dispose()
