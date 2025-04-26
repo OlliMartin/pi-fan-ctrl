@@ -1,6 +1,8 @@
+using System.Runtime.InteropServices;
 using PiFanCtrl.Components;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Services;
+using PiFanCtrl.Services.FanRpm;
 using PiFanCtrl.Services.Pwm;
 using PiFanCtrl.Services.Stores;
 using PiFanCtrl.Services.Temperature;
@@ -27,13 +29,22 @@ builder.Services
   .AddKeyedSingleton<ITemperatureSensor, TemperatureWrapper>("delegating")
   .AddSingleton<PwmControllerWrapper>();
 
-if (false)
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
   builder.Services.AddSingleton<IPwmController, DummyPwmController>();
 }
 else
 {
   builder.Services.AddSingleton<IPwmController, GpioPwmController>();
+}
+
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+  builder.Services.AddSingleton<IFanRpmSensor, DummyFanRpmSensor>();
+}
+else
+{
+  builder.Services.AddSingleton<IFanRpmSensor, GpioFanRpmSensor>();
 }
 
 builder.Services.AddHostedService<PwmControlWorker>();
