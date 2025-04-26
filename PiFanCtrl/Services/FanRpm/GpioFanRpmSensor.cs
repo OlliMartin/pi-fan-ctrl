@@ -38,7 +38,7 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
     var duration = _lastMeasurement.Elapsed;
     _lastMeasurement.Restart();
     
-    var rpm = (interruptCount / 2m) / ((decimal)duration.TotalNanoseconds * (decimal)TimeSpan.FromMinutes(1).TotalNanoseconds);
+    var rpm = (interruptCount / 2m * (decimal)TimeSpan.FromMinutes(1).TotalNanoseconds) / ((decimal)duration.TotalNanoseconds);
     
     _logger.LogInformation("{cnt} interrupts occurred in {duration}, RPM is: {rpm}", interruptCount, duration, rpm);
     
