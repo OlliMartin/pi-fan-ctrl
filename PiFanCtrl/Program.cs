@@ -48,6 +48,7 @@ else
 }
 
 builder.Services.AddHostedService<PwmControlWorker>();
+builder.Services.AddHostedService<FanRpmWorker>();
 
 var app = builder.Build();
 
