@@ -25,6 +25,8 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
 
     var pinSettings = pinOptions.Value;
 
+    _logger.LogInformation("Starting fan rpm sensor on pin {pin}.", pinSettings.Pin);
+    
     _gpioController = new();
     _gpioController.OpenPin(pinSettings.Pin, PinMode.InputPullUp);
     _gpioController.RegisterCallbackForPinValueChangedEvent(pinSettings.Pin, PinEventTypes.Falling,
