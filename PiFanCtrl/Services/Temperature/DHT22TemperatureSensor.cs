@@ -12,7 +12,7 @@ public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
   private readonly SensorConfiguration _sensorConfiguration;
   public string Name => $"DHT22-Pin-{_sensorConfiguration.Pin}";
 
-  private readonly DhtBase _dht;
+  private readonly Dht22 _dht;
   
   public DHT22TemperatureSensor(ILogger<DHT22TemperatureSensor> logger, SensorConfiguration sensorConfiguration)
   {
@@ -21,13 +21,13 @@ public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
     
     _logger.LogInformation("Starting temperature sensor on pin {pin}.", sensorConfiguration.Pin);
     
-    _dht = new Dht22(_sensorConfiguration.Pin);
+    _dht = new(_sensorConfiguration.Pin);
   }
   
   public Task<TemperatureReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
   {
     var success = _dht.TryReadTemperature(out var temperature);
-
+    
     if (success)
     {
       return Task.FromResult<TemperatureReading?>(new()
@@ -37,6 +37,8 @@ public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
         Value = (decimal)temperature.Value
       });
     }
+    
+    _logger.LogWarning("Failed to read temperature sensor {name}.", Name);
 
     return Task.FromResult<TemperatureReading?>(null);
   }
