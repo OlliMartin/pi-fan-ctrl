@@ -62,6 +62,23 @@ else
 builder.Services.AddHostedService<PwmControlWorker>();
 builder.Services.AddHostedService<FanRpmWorker>();
 
+foreach (var sensorDef in temperatureConfiguration.Get<TemperatureSensorConfiguration>()?.Sensors ?? [])
+{
+  if (sensorDef.Type == TemperatureSensor.DHT22)
+  {
+    builder.Services.AddSingleton<ITemperatureSensor>(sp =>
+    {
+      var logger = sp.GetRequiredService<ILogger<DHT22TemperatureSensor>>();
+      var sensor = new DHT22TemperatureSensor(logger, sensorDef);
+      return sensor;
+    });
+  }
+  else
+  {
+    throw new InvalidOperationException($"Unhandled/unknown sensor type {sensorDef.Type}. Cannot start.");
+  }
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
