@@ -79,7 +79,7 @@ else
 }
 
 builder.Services.AddHostedService<PwmControlWorker>();
-builder.Services.AddHostedService<FanRpmWorker>();
+// builder.Services.AddHostedService<FanRpmWorker>();
 
 SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
 
