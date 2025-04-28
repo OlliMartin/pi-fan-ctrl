@@ -9,7 +9,7 @@ namespace PiFanCtrl.Services.FanRpm;
 
 public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
 {
-  public string Name => $"Input-{_pinOptions.Value.Pin}";
+  public string Name => $"RPM-Pin-{_pinOptions.Value.Pin}";
 
   private readonly GpioController _gpioController;
   private readonly ILogger _logger;

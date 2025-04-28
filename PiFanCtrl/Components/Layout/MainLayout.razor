@@ -1,20 +1,52 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+<BlazorBootstrapLayout StickyHeader="true">
+    <HeaderSection>
+        <ThemeSwitcher Class="ps-3 ps-lg-2" Position="DropdownMenuPosition.End"/>
+    </HeaderSection>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+    <SidebarSection>
+        <Sidebar2 Href="/"
+                  ImageSrc="https://demos.blazorbootstrap.com/images/logo/logo-white.svg"
+                  Title="Fan Control"
+                  BadgeText="0.0.1"
+                  DataProvider="Sidebar2DataProvider"
+                  WidthUnit="Unit.Px"/>
+    </SidebarSection>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    <ContentSection>
+        @Body
+    </ContentSection>
+
+    <FooterSection>
+        Footer links...
+    </FooterSection>
+</BlazorBootstrapLayout>
+
+@code {
+    private IEnumerable<NavItem> navItems = default!;
+
+    private async Task<Sidebar2DataProviderResult> Sidebar2DataProvider(Sidebar2DataProviderRequest request)
+    {
+        if (navItems is null)
+            navItems = GetNavItems();
+
+        return await Task.FromResult(request.ApplyTo(navItems));
+    }
+
+    private IEnumerable<NavItem> GetNavItems()
+    {
+        navItems = new List<NavItem>
+        {
+            new() { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Home", Match = NavLinkMatch.All, },
+            new() { Id = "2", Href = "/history", IconName = IconName.PlusSquareFill, Text = "History", },
+            new() { Id = "3", Href = "/simulate", IconName = IconName.Table, Text = "Simulate", },
+        };
+
+        return navItems;
+    }
+
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

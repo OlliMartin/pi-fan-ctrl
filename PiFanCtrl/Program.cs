@@ -17,6 +17,8 @@ builder.Services.AddSystemd();
 builder.Services.AddRazorComponents()
   .AddInteractiveServerComponents();
 
+builder.Services.AddBlazorBootstrap();
+
 builder.Services.AddLogging(
   opts =>
   {
