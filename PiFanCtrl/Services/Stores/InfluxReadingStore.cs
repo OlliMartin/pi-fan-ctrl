@@ -26,8 +26,6 @@ public sealed class InfluxReadingStore
     _influxConfiguration = influxConfiguration;
     InfluxConfiguration settings = influxConfiguration.Value;
 
-    _logger.LogInformation("Tmp {pw}", settings.Password);
-
     _influx = new(
       settings.Url,
       settings.Password

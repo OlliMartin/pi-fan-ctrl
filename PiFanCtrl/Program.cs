@@ -11,6 +11,7 @@ using PiFanCtrl.Services.Temperature;
 using PiFanCtrl.Workers;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSystemd();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -95,7 +96,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 
 app.UseAntiforgery();
 
