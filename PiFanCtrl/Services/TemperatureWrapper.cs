@@ -3,7 +3,10 @@ using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Services;
 
-public class TemperatureWrapper(IEnumerable<ITemperatureSensor> sensors, ITemperatureStore temperatureStore)
+public class TemperatureWrapper(
+  IEnumerable<ITemperatureSensor> sensors,
+  [FromKeyedServices("delegating")] ITemperatureStore temperatureStore
+)
   : ITemperatureSensor
 {
   public string Name => "Aggregate";
@@ -31,23 +34,26 @@ public class TemperatureWrapper(IEnumerable<ITemperatureSensor> sensors, ITemper
       {
         Sensor = Name,
         IsOverride = true,
-        Value = ProcessReadings(overrides),
+        Value = await ProcessReadingsAsync(overrides, cancelToken),
       }
       : new TemperatureReading()
       {
         Sensor = Name,
         IsOverride = false,
-        Value = ProcessReadings(values),
+        Value = await ProcessReadingsAsync(values, cancelToken),
       };
 
-    temperatureStore.Add(result);
+    await temperatureStore.AddAsync(result, cancelToken);
 
     return [result,];
   }
 
-  private decimal ProcessReadings(IList<TemperatureReading> readings)
+  private async Task<decimal> ProcessReadingsAsync(
+    IList<TemperatureReading> readings,
+    CancellationToken cancelToken
+  )
   {
-    temperatureStore.AddRange(readings);
+    await temperatureStore.AddRangeAsync(readings, cancelToken);
 
     // TODO: Make configurable
     decimal result = readings.Average(o => o.Value);

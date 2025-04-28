@@ -4,9 +4,12 @@ namespace PiFanCtrl.Interfaces;
 
 public interface ITemperatureStore
 {
-  public void Add(TemperatureReading reading);
+  public Task AddAsync(TemperatureReading reading, CancellationToken cancelToken = default);
 
-  public void AddRange(IEnumerable<TemperatureReading> readings);
+  public Task AddRangeAsync(
+    IEnumerable<TemperatureReading> readings,
+    CancellationToken cancelToken = default
+  );
 
   public IEnumerable<TemperatureReading> GetAll();
 }

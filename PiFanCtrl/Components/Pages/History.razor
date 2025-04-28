@@ -1,8 +1,9 @@
 ﻿@page "/history"
 @using PiFanCtrl.Interfaces
 @using PiFanCtrl.Model
+@using PiFanCtrl.Services.Stores
 @attribute [StreamRendering]
-@inject ITemperatureStore TemperatureStore
+@inject SlidingTemperatureStore TemperatureStore
 
 <PageTitle>Temperature History</PageTitle>
 
@@ -26,7 +27,7 @@ else
         </tr>
         </thead>
         <tbody>
-        @foreach (var reading in _readings)
+        @foreach (TemperatureReading? reading in _readings)
         {
             <tr>
                 <td>@reading.AsOf.ToString("o")</td>
@@ -47,4 +48,5 @@ else
         _readings = TemperatureStore.GetAll().ToArray();
         return Task.CompletedTask;
     }
+
 }

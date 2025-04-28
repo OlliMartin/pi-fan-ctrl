@@ -56,7 +56,7 @@ public class UnifiTemperatureSensor : ITemperatureSensor
       return mappedToSensor.Select(
         (tuple) => new TemperatureReading()
         {
-          Sensor = tuple.Device.FriendlyName,
+          Sensor = $"unifi-{tuple.Device.FriendlyName}",
           // TODO: This function is wrong; Figure out how to retrieve data.
           Value = tuple.Data.GetTemperature(),
         }
@@ -77,7 +77,7 @@ public class UnifiTemperatureSensor : ITemperatureSensor
   {
     Stopwatch sw = Stopwatch.StartNew();
     long contentSize = 0;
-    
+
     try
     {
       using HttpResponseMessage httpResponse = await httpClient.GetAsync(DEVICE_ENDPOINT, cancelToken);
@@ -96,7 +96,12 @@ public class UnifiTemperatureSensor : ITemperatureSensor
     finally
     {
       sw.Stop();
-      _logger.LogDebug("Retrieved device information from unifi controller in {elapsed} (Content-Size={cs}).", sw.Elapsed, contentSize);
+
+      _logger.LogDebug(
+        "Retrieved device information from unifi controller in {elapsed} (Content-Size={cs}).",
+        sw.Elapsed,
+        contentSize
+      );
     }
   }
 }

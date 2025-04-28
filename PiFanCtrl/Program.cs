@@ -10,37 +10,54 @@ using PiFanCtrl.Services.Stores;
 using PiFanCtrl.Services.Temperature;
 using PiFanCtrl.Workers;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
   .AddInteractiveServerComponents();
 
-builder.Services.AddLogging(opts =>
-{
-  opts.SetMinimumLevel(LogLevel.Debug);
-  opts.AddConsole();
-});
+builder.Services.AddLogging(
+  opts =>
+  {
+    opts.SetMinimumLevel(LogLevel.Debug);
+    opts.AddConsole();
+  }
+);
 
-var rootConfiguration = builder.Configuration.GetSection(RootSettings.SECTION_NAME);
+IConfigurationSection rootConfiguration = builder.Configuration.GetSection(RootSettings.SECTION_NAME);
 
-var pwmConfiguration = rootConfiguration.GetSection(PwmPinConfiguration.SECTION_NAME);
-var temperatureConfiguration = rootConfiguration.GetSection(TemperatureSensorConfiguration.SECTION_NAME);
-var fanRpmConfiguration = rootConfiguration.GetSection(FanRpmPinConfiguration.SECTION_NAME);
+IConfigurationSection pwmConfiguration = rootConfiguration.GetSection(PwmPinConfiguration.SECTION_NAME);
+
+IConfigurationSection temperatureConfiguration =
+  rootConfiguration.GetSection(TemperatureSensorConfiguration.SECTION_NAME);
+
+IConfigurationSection fanRpmConfiguration = rootConfiguration.GetSection(FanRpmPinConfiguration.SECTION_NAME);
+
+IConfigurationSection influxConfiguration = rootConfiguration.GetSection(InfluxConfiguration.SECTION_NAME);
 
 builder.Services.Configure<RootSettings>(rootConfiguration)
   .Configure<PwmPinConfiguration>(pwmConfiguration)
   .Configure<TemperatureSensorConfiguration>(temperatureConfiguration)
-  .Configure<FanRpmPinConfiguration>(fanRpmConfiguration);
+  .Configure<FanRpmPinConfiguration>(fanRpmConfiguration)
+  .Configure<InfluxConfiguration>(influxConfiguration);
 
 builder.Services
-  .AddSingleton<ITemperatureStore, SlidingTemperatureStore>()
+  .AddSingleton<SlidingTemperatureStore>()
+  .AddSingleton<ITemperatureStore>(sp => sp.GetRequiredService<SlidingTemperatureStore>())
   .AddSingleton<ITemperatureSensor, DummyTemperatureSensor>()
-  .AddSingleton<DummyTemperatureSensor>(sp =>
-    (sp.GetServices<ITemperatureSensor>()
-      .Single(ts => ts is DummyTemperatureSensor) as DummyTemperatureSensor)!)
+  .AddKeyedSingleton<ITemperatureStore, TemperatureStoreWrapper>("delegating")
+  .AddSingleton<DummyTemperatureSensor>(
+    sp =>
+      (sp.GetServices<ITemperatureSensor>()
+        .Single(ts => ts is DummyTemperatureSensor) as DummyTemperatureSensor)!
+  )
   .AddKeyedSingleton<ITemperatureSensor, TemperatureWrapper>("delegating")
   .AddSingleton<PwmControllerWrapper>();
+
+if (influxConfiguration.Exists())
+{
+  builder.Services.AddSingleton<ITemperatureStore, InfluxTemperatureStore>();
+}
 
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 {
@@ -65,7 +82,7 @@ builder.Services.AddHostedService<FanRpmWorker>();
 
 SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -81,6 +98,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
 app.MapRazorComponents<App>()
   .AddInteractiveServerRenderMode();
 
