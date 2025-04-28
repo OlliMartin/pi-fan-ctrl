@@ -9,13 +9,22 @@ using PiFanCtrl.Model.Settings;
 
 namespace PiFanCtrl.Services.Stores;
 
-public sealed class InfluxTemperatureStore(IOptions<InfluxConfiguration> influxConfiguration)
+public sealed class InfluxTemperatureStore
   : ITemperatureStore, IDisposable
 {
-  private readonly InfluxDBClient _influx = new(
-    influxConfiguration.Value.Url,
-    influxConfiguration.Value.Password
-  );
+  private readonly IOptions<InfluxConfiguration> _influxConfiguration;
+  private readonly InfluxDBClient _influx;
+
+  public InfluxTemperatureStore(IOptions<InfluxConfiguration> influxConfiguration)
+  {
+    _influxConfiguration = influxConfiguration;
+    InfluxConfiguration settings = influxConfiguration.Value;
+
+    _influx = new(
+      settings.Url,
+      settings.Password
+    );
+  }
 
   private readonly string _hostname = System.Net.Dns.GetHostName();
 
@@ -27,7 +36,7 @@ public sealed class InfluxTemperatureStore(IOptions<InfluxConfiguration> influxC
     CancellationToken cancelToken = default
   )
   {
-    InfluxConfiguration settings = influxConfiguration.Value;
+    InfluxConfiguration settings = _influxConfiguration.Value;
     WriteApiAsync? writeApi = _influx.GetWriteApiAsync();
 
     List<PointData> points = readings.Select(
