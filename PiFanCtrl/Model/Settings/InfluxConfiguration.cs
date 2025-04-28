@@ -8,5 +8,7 @@ public class InfluxConfiguration
 
   public string Password { get; init; }
 
+  public string Organisation { get; init; }
+
   public string Bucket { get; init; }
 }

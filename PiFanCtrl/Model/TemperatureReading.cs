@@ -1,12 +1,23 @@
+using PiFanCtrl.Interfaces;
+
 namespace PiFanCtrl.Model;
 
-public record TemperatureReading
+public record TemperatureReading : IReading
 {
-  public required string Sensor { get; init; }
-  
+  public string Measurement => "Temperature";
+
+  public required string Source { get; init; }
+
   public bool IsOverride { get; init; } = false;
-  
+
   public decimal Value { get; init; }
 
   public DateTime AsOf { get; init; } = DateTime.UtcNow;
+
+  public Dictionary<string, string> Metadata => new()
+  {
+    ["IsOverride"] = IsOverride
+      ? "true"
+      : "false",
+  };
 }

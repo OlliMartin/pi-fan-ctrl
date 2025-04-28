@@ -55,7 +55,7 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
     return Task.FromResult<FanRpmReading?>(
       new()
       {
-        Sensor = Name,
+        Source = Name,
         Value = rpm,
       }
     );

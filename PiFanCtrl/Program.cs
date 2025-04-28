@@ -42,10 +42,10 @@ builder.Services.Configure<RootSettings>(rootConfiguration)
   .Configure<InfluxConfiguration>(influxConfiguration);
 
 builder.Services
-  .AddSingleton<SlidingTemperatureStore>()
-  .AddSingleton<ITemperatureStore>(sp => sp.GetRequiredService<SlidingTemperatureStore>())
+  .AddSingleton<SlidingReadingStore>()
+  .AddSingleton<IReadingStore>(sp => sp.GetRequiredService<SlidingReadingStore>())
   .AddSingleton<ITemperatureSensor, DummyTemperatureSensor>()
-  .AddKeyedSingleton<ITemperatureStore, TemperatureStoreWrapper>("delegating")
+  .AddKeyedSingleton<IReadingStore, ReadingStoreWrapper>("delegating")
   .AddSingleton<DummyTemperatureSensor>(
     sp =>
       (sp.GetServices<ITemperatureSensor>()
@@ -56,7 +56,7 @@ builder.Services
 
 if (influxConfiguration.Exists())
 {
-  builder.Services.AddSingleton<ITemperatureStore, InfluxTemperatureStore>();
+  builder.Services.AddSingleton<IReadingStore, InfluxReadingStore>();
 }
 
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

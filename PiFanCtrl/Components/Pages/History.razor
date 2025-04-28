@@ -3,7 +3,7 @@
 @using PiFanCtrl.Model
 @using PiFanCtrl.Services.Stores
 @attribute [StreamRendering]
-@inject SlidingTemperatureStore TemperatureStore
+@inject SlidingReadingStore ReadingStore
 
 <PageTitle>Temperature History</PageTitle>
 
@@ -23,17 +23,15 @@ else
             <th>Date</th>
             <th aria-label="Temperature">Value</th>
             <th>Sensor</th>
-            <th>Is Override</th>
         </tr>
         </thead>
         <tbody>
-        @foreach (TemperatureReading? reading in _readings)
+        @foreach (IReading? reading in _readings)
         {
             <tr>
                 <td>@reading.AsOf.ToString("o")</td>
                 <td>@reading.Value</td>
-                <td>@reading.Sensor</td>
-                <td>@reading.IsOverride</td>
+                <td>@reading.Source</td>
             </tr>
         }
         </tbody>
@@ -41,11 +39,11 @@ else
 }
 
 @code {
-    private TemperatureReading[]? _readings;
+    private IReading[]? _readings;
 
     protected override Task OnInitializedAsync()
     {
-        _readings = TemperatureStore.GetAll().ToArray();
+        _readings = ReadingStore.GetAll().ToArray();
         return Task.CompletedTask;
     }
 

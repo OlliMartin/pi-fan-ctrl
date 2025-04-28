@@ -3,7 +3,11 @@ using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Workers;
 
-public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor) : IHostedService
+public class FanRpmWorker(
+  ILogger<FanRpmWorker> logger,
+  IFanRpmSensor rpmSensor,
+  [FromKeyedServices("delegating")] IReadingStore readingStore
+) : IHostedService
 {
   private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(seconds: 5));
 
@@ -26,6 +30,11 @@ public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor)
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
         FanRpmReading? reading = await rpmSensor.ReadNextValueAsync(cancelToken);
+
+        if (reading is not null)
+        {
+          await readingStore.AddAsync(reading, cancelToken);
+        }
       }
     }
     catch (OperationCanceledException)

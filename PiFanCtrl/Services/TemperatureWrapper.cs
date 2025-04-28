@@ -5,7 +5,7 @@ namespace PiFanCtrl.Services;
 
 public class TemperatureWrapper(
   IEnumerable<ITemperatureSensor> sensors,
-  [FromKeyedServices("delegating")] ITemperatureStore temperatureStore
+  [FromKeyedServices("delegating")] IReadingStore readingStore
 )
   : ITemperatureSensor
 {
@@ -32,18 +32,18 @@ public class TemperatureWrapper(
     TemperatureReading result = overrides.Count > 0
       ? new()
       {
-        Sensor = Name,
+        Source = Name,
         IsOverride = true,
         Value = await ProcessReadingsAsync(overrides, cancelToken),
       }
       : new TemperatureReading()
       {
-        Sensor = Name,
+        Source = Name,
         IsOverride = false,
         Value = await ProcessReadingsAsync(values, cancelToken),
       };
 
-    await temperatureStore.AddAsync(result, cancelToken);
+    await readingStore.AddAsync(result, cancelToken);
 
     return [result,];
   }
@@ -53,7 +53,7 @@ public class TemperatureWrapper(
     CancellationToken cancelToken
   )
   {
-    await temperatureStore.AddRangeAsync(readings, cancelToken);
+    await readingStore.AddRangeAsync(readings, cancelToken);
 
     // TODO: Make configurable
     decimal result = readings.Average(o => o.Value);

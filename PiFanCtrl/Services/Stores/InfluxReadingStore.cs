@@ -10,15 +10,15 @@ using PiFanCtrl.Model.Settings;
 
 namespace PiFanCtrl.Services.Stores;
 
-public sealed class InfluxTemperatureStore
-  : ITemperatureStore, IDisposable
+public sealed class InfluxReadingStore
+  : IReadingStore, IDisposable
 {
   private readonly ILogger _logger;
   private readonly IOptions<InfluxConfiguration> _influxConfiguration;
   private readonly InfluxDBClient _influx;
 
-  public InfluxTemperatureStore(
-    ILogger<InfluxTemperatureStore> logger,
+  public InfluxReadingStore(
+    ILogger<InfluxReadingStore> logger,
     IOptions<InfluxConfiguration> influxConfiguration
   )
   {
@@ -34,11 +34,11 @@ public sealed class InfluxTemperatureStore
 
   private readonly string _hostname = System.Net.Dns.GetHostName();
 
-  public Task AddAsync(TemperatureReading reading, CancellationToken cancelToken = default) =>
+  public Task AddAsync(IReading reading, CancellationToken cancelToken = default) =>
     AddRangeAsync([reading,], cancelToken);
 
   public async Task AddRangeAsync(
-    IEnumerable<TemperatureReading> readings,
+    IEnumerable<IReading> readings,
     CancellationToken cancelToken = default
   )
   {
@@ -46,26 +46,26 @@ public sealed class InfluxTemperatureStore
     WriteApiAsync? writeApi = _influx.GetWriteApiAsync();
 
     List<PointData> points = readings.Select(
-      r => PointData.Measurement("temperature")
+      r => PointData.Measurement(r.Measurement)
         .Field("value", (double)r.Value)
         .Timestamp(r.AsOf, WritePrecision.Ms)
-        .Tag("sensor", r.Sensor)
-        .Tag("source", _hostname)
+        .Tag("source", r.Source)
+        .Tag("host", _hostname)
     ).ToList();
 
-    await writeApi.WritePointsAsync(points, settings.Bucket, "ollimart.in", cancelToken);
+    await writeApi.WritePointsAsync(points, settings.Bucket, settings.Organisation, cancelToken);
   }
 
-  public IEnumerable<TemperatureReading> GetAll() => throw new NotImplementedException();
+  public IEnumerable<IReading> GetAll() => throw new NotImplementedException();
 
   public void Dispose()
   {
     Stopwatch sw = Stopwatch.StartNew();
-    _logger.LogInformation("Disposing {name}.", nameof(InfluxTemperatureStore));
+    _logger.LogInformation("Disposing {name}.", nameof(InfluxReadingStore));
 
     _influx.Dispose();
 
     sw.Stop();
-    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(InfluxTemperatureStore), sw.Elapsed);
+    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(InfluxReadingStore), sw.Elapsed);
   }
 }

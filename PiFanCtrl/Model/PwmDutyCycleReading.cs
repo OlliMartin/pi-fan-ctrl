@@ -2,13 +2,12 @@ using PiFanCtrl.Interfaces;
 
 namespace PiFanCtrl.Model;
 
-public record FanRpmReading : IReading
+public class PwmDutyCycleReading : IReading
 {
-  public string Measurement => "FanRpm";
-  public required string Source { get; init; }
+  public string Measurement => "DutyCycle";
+  public string Source { get; init; } = "Calculated";
 
   public decimal Value { get; init; }
-
   public DateTime AsOf { get; init; } = DateTime.UtcNow;
 
   public Dictionary<string, string> Metadata { get; } = new();

@@ -38,7 +38,7 @@ public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
         [
           new()
           {
-            Sensor = Name,
+            Source = Name,
             IsOverride = false,
             Value = (decimal)temperature.Value,
           },

@@ -28,7 +28,7 @@ public class DummyTemperatureSensor : ITemperatureSensor
 
     return Task.FromResult<IEnumerable<TemperatureReading>>(
       [
-        new() { Value = _value.Value, IsOverride = true, Sensor = Name, },
+        new() { Value = _value.Value, IsOverride = true, Source = Name, },
       ]
     );
   }

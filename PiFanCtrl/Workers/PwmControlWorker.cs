@@ -7,7 +7,7 @@ namespace PiFanCtrl.Workers;
 public class PwmControlWorker(
   [FromKeyedServices("delegating")] ITemperatureSensor temperatureSensor,
   PwmControllerWrapper pwmController,
-  ITemperatureStore temperatureStore,
+  IReadingStore readingStore,
   ILogger<PwmControlWorker> logger
 ) : IHostedService
 {

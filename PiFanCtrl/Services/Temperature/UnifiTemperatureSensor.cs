@@ -59,7 +59,7 @@ public class UnifiTemperatureSensor : ITemperatureSensor
       return mappedToSensor.Select(
         (tuple) => new TemperatureReading()
         {
-          Sensor = $"unifi-{tuple.Device.FriendlyName}{tuple.Triple.Suffix}",
+          Source = $"unifi-{tuple.Device.FriendlyName}{tuple.Triple.Suffix}",
           // TODO: This function is wrong; Figure out how to retrieve data.
           Value = tuple.Triple.Value,
         }
