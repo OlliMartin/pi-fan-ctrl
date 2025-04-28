@@ -9,38 +9,45 @@ namespace PiFanCtrl.Services.Temperature;
 public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
 {
   private readonly ILogger<DHT22TemperatureSensor> _logger;
-  private readonly SensorConfiguration _sensorConfiguration;
+  private readonly HardwareSensorConfiguration _sensorConfiguration;
   public string Name => $"DHT22-Pin-{_sensorConfiguration.Pin}";
 
   private readonly Dht22 _dht;
-  
-  public DHT22TemperatureSensor(ILogger<DHT22TemperatureSensor> logger, SensorConfiguration sensorConfiguration)
+
+  public DHT22TemperatureSensor(
+    ILogger<DHT22TemperatureSensor> logger,
+    HardwareSensorConfiguration sensorConfiguration
+  )
   {
     _logger = logger;
     _sensorConfiguration = sensorConfiguration;
-    
+
     _logger.LogInformation("Starting temperature sensor on pin {pin}.", sensorConfiguration.Pin);
-    
+
     _dht = new(_sensorConfiguration.Pin);
   }
-  
-  public Task<TemperatureReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
+
+  public Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(CancellationToken cancelToken = default)
   {
-    var success = _dht.TryReadTemperature(out var temperature);
-    
+    bool success = _dht.TryReadTemperature(out UnitsNet.Temperature temperature);
+
     if (success)
     {
-      return Task.FromResult<TemperatureReading?>(new()
-      {
-        Sensor = Name,
-        IsOverride = false,
-        Value = (decimal)temperature.Value
-      });
+      return Task.FromResult<IEnumerable<TemperatureReading>>(
+        [
+          new()
+          {
+            Sensor = Name,
+            IsOverride = false,
+            Value = (decimal)temperature.Value,
+          },
+        ]
+      );
     }
-    
+
     _logger.LogWarning("Failed to read temperature sensor {name}.", Name);
 
-    return Task.FromResult<TemperatureReading?>(null);
+    return Task.FromResult<IEnumerable<TemperatureReading>>(Array.Empty<TemperatureReading>());
   }
 
   public void Dispose()

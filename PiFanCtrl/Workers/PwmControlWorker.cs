@@ -1,4 +1,5 @@
 using PiFanCtrl.Interfaces;
+using PiFanCtrl.Model;
 using PiFanCtrl.Services.Pwm;
 
 namespace PiFanCtrl.Workers;
@@ -11,15 +12,15 @@ public class PwmControlWorker(
 ) : IHostedService
 {
   private const decimal DEFAULT_DUTY_CYCLE = 100;
-  private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(5));
+  private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(seconds: 5));
 
   private CancellationTokenSource? _cts;
-  
+
   public async Task StartAsync(CancellationToken cancellationToken)
   {
     logger.LogInformation("Starting pwm control worker.");
-    
-    _cts = new CancellationTokenSource();
+
+    _cts = new();
     _ = RunTimerAsync(_cts.Token);
 
     logger.LogInformation("Initializing duty cycle to {val}.", DEFAULT_DUTY_CYCLE);
@@ -32,7 +33,7 @@ public class PwmControlWorker(
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
-        var reading = await temperatureSensor.ReadNextValueAsync(cancelToken);
+        IEnumerable<TemperatureReading>? reading = await temperatureSensor.ReadNextValuesAsync(cancelToken);
       }
     }
     catch (OperationCanceledException)
@@ -42,7 +43,7 @@ public class PwmControlWorker(
     catch (Exception ex)
     {
       logger.LogError(ex, "An error occurred during pwm processing.");
-      
+
       throw;
     }
   }

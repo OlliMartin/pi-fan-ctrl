@@ -6,7 +6,7 @@ namespace PiFanCtrl.Services.Temperature;
 public class DummyTemperatureSensor : ITemperatureSensor
 {
   private decimal? _value;
-  
+
   public string Name => "Simulated";
 
   public void Simulate(decimal value)
@@ -19,13 +19,17 @@ public class DummyTemperatureSensor : ITemperatureSensor
     _value = null;
   }
 
-  public Task<TemperatureReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
+  public Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(CancellationToken cancelToken = default)
   {
     if (_value is null)
     {
-      return Task.FromResult<TemperatureReading?>(null);
+      return Task.FromResult<IEnumerable<TemperatureReading>>(Array.Empty<TemperatureReading>());
     }
-    
-    return Task.FromResult<TemperatureReading?>(new() { Value = _value.Value, IsOverride = true, Sensor = Name });
+
+    return Task.FromResult<IEnumerable<TemperatureReading>>(
+      [
+        new() { Value = _value.Value, IsOverride = true, Sensor = Name, },
+      ]
+    );
   }
 }

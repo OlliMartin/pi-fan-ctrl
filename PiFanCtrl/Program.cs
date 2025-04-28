@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using PiFanCtrl.Components;
+using PiFanCtrl.Factories;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model.Settings;
 using PiFanCtrl.Services;
@@ -62,22 +63,7 @@ else
 builder.Services.AddHostedService<PwmControlWorker>();
 builder.Services.AddHostedService<FanRpmWorker>();
 
-foreach (var sensorDef in temperatureConfiguration.Get<TemperatureSensorConfiguration>()?.Sensors ?? [])
-{
-  if (sensorDef.Type == TemperatureSensor.DHT22)
-  {
-    builder.Services.AddSingleton<ITemperatureSensor>(sp =>
-    {
-      var logger = sp.GetRequiredService<ILogger<DHT22TemperatureSensor>>();
-      var sensor = new DHT22TemperatureSensor(logger, sensorDef);
-      return sensor;
-    });
-  }
-  else
-  {
-    throw new InvalidOperationException($"Unhandled/unknown sensor type {sensorDef.Type}. Cannot start.");
-  }
-}
+SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
 
 var app = builder.Build();
 

@@ -6,5 +6,5 @@ public interface ITemperatureSensor
 {
   string Name { get; }
   
-  Task<TemperatureReading?> ReadNextValueAsync(CancellationToken cancelToken = default);
+  Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(CancellationToken cancelToken = default);
 }

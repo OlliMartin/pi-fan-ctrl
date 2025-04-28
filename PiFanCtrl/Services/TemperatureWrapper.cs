@@ -8,38 +8,41 @@ public class TemperatureWrapper(IEnumerable<ITemperatureSensor> sensors, ITemper
 {
   public string Name => "Aggregate";
 
-  public async Task<TemperatureReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
+  public async Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(
+    CancellationToken cancelToken = default
+  )
   {
-    var values = (await Task.WhenAll(sensors.Select(s => s.ReadNextValueAsync(cancelToken))))
-      .OfType<TemperatureReading>()
+    List<TemperatureReading> values =
+      (await Task.WhenAll(sensors.Select(s => s.ReadNextValuesAsync(cancelToken))))
+      .SelectMany(e => e)
       .ToList();
 
     if (values.Count == 0)
     {
-      return null;
+      return [];
     }
 
-    var overrides = values
+    List<TemperatureReading> overrides = values
       .Where(v => v.IsOverride)
       .ToList();
 
-    var result = overrides.Count > 0
-      ? new TemperatureReading()
+    TemperatureReading result = overrides.Count > 0
+      ? new()
       {
         Sensor = Name,
         IsOverride = true,
-        Value = ProcessReadings(overrides)
+        Value = ProcessReadings(overrides),
       }
       : new TemperatureReading()
       {
         Sensor = Name,
         IsOverride = false,
-        Value = ProcessReadings(values)
+        Value = ProcessReadings(values),
       };
-    
+
     temperatureStore.Add(result);
 
-    return result;
+    return [result,];
   }
 
   private decimal ProcessReadings(IList<TemperatureReading> readings)
@@ -47,8 +50,8 @@ public class TemperatureWrapper(IEnumerable<ITemperatureSensor> sensors, ITemper
     temperatureStore.AddRange(readings);
 
     // TODO: Make configurable
-    var result = readings.Average(o => o.Value);
-    
+    decimal result = readings.Average(o => o.Value);
+
     return result;
   }
 }
