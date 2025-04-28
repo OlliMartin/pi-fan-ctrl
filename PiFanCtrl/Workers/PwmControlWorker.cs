@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
 using PiFanCtrl.Services.Pwm;
@@ -18,6 +19,7 @@ public class PwmControlWorker(
 
   public async Task StartAsync(CancellationToken cancellationToken)
   {
+    Stopwatch swStart = Stopwatch.StartNew();
     logger.LogInformation("Starting pwm control worker.");
 
     _cts = new();
@@ -25,6 +27,9 @@ public class PwmControlWorker(
 
     logger.LogInformation("Initializing duty cycle to {val}.", DEFAULT_DUTY_CYCLE);
     await pwmController.SetDutyCycleAsync(DEFAULT_DUTY_CYCLE, cancellationToken);
+
+    swStart.Stop();
+    logger.LogInformation("{wName} started in {elapsed}.", nameof(PwmControlWorker), swStart.Elapsed);
   }
 
   private async Task RunTimerAsync(CancellationToken cancelToken = default)

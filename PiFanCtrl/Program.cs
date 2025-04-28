@@ -11,13 +11,11 @@ using PiFanCtrl.Services.Temperature;
 using PiFanCtrl.Workers;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-builder.Host.UseSystemd();
+builder.Services.AddSystemd();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
   .AddInteractiveServerComponents();
-
-builder.Services.AddSystemd();
 
 builder.Services.AddLogging(
   opts =>

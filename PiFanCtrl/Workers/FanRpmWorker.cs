@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
 
@@ -15,11 +16,14 @@ public class FanRpmWorker(
 
   public Task StartAsync(CancellationToken cancellationToken)
   {
+    Stopwatch swStart = Stopwatch.StartNew();
     logger.LogInformation("Starting fan rpm worker.");
 
     _cts = new();
     _ = RunTimerAsync(_cts.Token);
 
+    swStart.Stop();
+    logger.LogInformation("{wName} started in {elapsed}.", nameof(FanRpmWorker), swStart.Elapsed);
     return Task.CompletedTask;
   }
 
