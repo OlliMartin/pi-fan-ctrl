@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using PiFanCtrl.Services
 
 <PageTitle>Home</PageTitle>
 
@@ -11,57 +12,43 @@
     private LineChartOptions lineChartOptions = default!;
     private ChartData chartData = default!;
 
-    protected override void OnInitialized()
-    {
-        string[]? colors = ColorUtility.CategoricalTwelveColors;
+    private int offThreshold = 30;
+    private int panicFrom = 80;
+    private decimal multiplier = 1.2m;
 
-        List<string>? labels = new() { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", };
+    private async Task<decimal> CalculateFanSpeed(decimal temperature)
+    {
+        if (temperature < offThreshold)
+        {
+            return 0;
+        }
+
+        if (temperature >= panicFrom)
+        {
+            return 100;
+        }
+
+        return Math.Min(val1: 100, temperature * multiplier);
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        string[] colors = ColorUtility.CategoricalTwelveColors;
+
+        List<string> labels = Enumerable.Range(start: 0, count: 100).Select(num => num).Select(val => val.ToString()).ToList();
         List<IChartDataset>? datasets = new();
 
         LineChartDataset? dataset1 = new()
         {
-            Label = "Windows",
-            Data = new() { 7265791, 5899643, 6317759, 6315641, 5338211, 8496306, 7568556, 8538933, 8274297, 8657298, 7548388, 7764845, },
+            Label = "Temperature",
+            Data = (await Task.WhenAll(Enumerable.Range(start: 0, count: 100).Select(num => num).Select(i => CalculateFanSpeed(i)))).Select(val => (double?)val).ToList(),
             BackgroundColor = colors[0],
             BorderColor = colors[0],
             BorderWidth = 2,
             HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[0],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
         };
 
         datasets.Add(dataset1);
-
-        LineChartDataset? dataset2 = new()
-        {
-            Label = "macOS",
-            Data = new() { 1809499, 1816642, 2122410, 1809499, 1850793, 1846743, 1954797, 2391313, 1983430, 2469918, 2633303, 2821149, },
-            BackgroundColor = colors[1],
-            BorderColor = colors[1],
-            BorderWidth = 2,
-            HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[1],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
-        };
-
-        datasets.Add(dataset2);
-
-        LineChartDataset? dataset3 = new()
-        {
-            Label = "Other",
-            Data = new() { 1081241, 1100363, 1118136, 1073255, 1120315, 1395736, 1488788, 1489466, 1489947, 1414739, 1735811, 1820171, },
-            BackgroundColor = colors[2],
-            BorderColor = colors[2],
-            BorderWidth = 2,
-            HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[2],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
-        };
-
-        datasets.Add(dataset3);
 
         chartData = new() { Labels = labels, Datasets = datasets, };
 
@@ -69,10 +56,10 @@
         lineChartOptions.Responsive = true;
         lineChartOptions.Interaction = new() { Mode = InteractionMode.Index, };
 
-        lineChartOptions.Scales.X!.Title = new() { Text = "2019", Display = true, };
-        lineChartOptions.Scales.Y!.Title = new() { Text = "Visitors", Display = true, };
+        lineChartOptions.Scales.X!.Title = new() { Text = "Temperature", Display = true, };
+        lineChartOptions.Scales.Y!.Title = new() { Text = "Fan Speed (%)", Display = true, };
 
-        lineChartOptions.Plugins.Title!.Text = "Operating system";
+        lineChartOptions.Plugins.Title!.Text = "Temperature to Speed Mapping";
         lineChartOptions.Plugins.Title.Display = true;
     }
 

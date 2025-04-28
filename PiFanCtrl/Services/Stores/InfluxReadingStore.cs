@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Options;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
@@ -15,7 +17,8 @@ public sealed class InfluxReadingStore
 {
   private readonly ILogger _logger;
   private readonly IOptions<InfluxConfiguration> _influxConfiguration;
-  private readonly InfluxDBClient _influx;
+  private InfluxDBClient? _influx;
+  private DateTime _clientCreatedAt;
 
   public InfluxReadingStore(
     ILogger<InfluxReadingStore> logger,
@@ -24,12 +27,30 @@ public sealed class InfluxReadingStore
   {
     _logger = logger;
     _influxConfiguration = influxConfiguration;
-    InfluxConfiguration settings = influxConfiguration.Value;
+  }
 
-    _influx = new(
+  [MemberNotNull(nameof(_influx))]
+  private void GetOrCreateClient()
+  {
+    InfluxConfiguration settings = _influxConfiguration.Value;
+
+    if (_influx is not null && _clientCreatedAt + settings.RenewClientAfter > DateTime.UtcNow)
+    {
+      return;
+    }
+
+    _logger.LogInformation("(Re)Newing influx db client.");
+
+    InfluxDBClient newClient = new(
       settings.Url,
       settings.Password
     );
+
+    _clientCreatedAt = DateTime.UtcNow;
+
+    InfluxDBClient? oldClient = Interlocked.Exchange(ref _influx, newClient);
+
+    oldClient?.Dispose();
   }
 
   private readonly string _hostname = System.Net.Dns.GetHostName();
@@ -42,18 +63,27 @@ public sealed class InfluxReadingStore
     CancellationToken cancelToken = default
   )
   {
-    InfluxConfiguration settings = _influxConfiguration.Value;
-    WriteApiAsync? writeApi = _influx.GetWriteApiAsync();
+    try
+    {
+      InfluxConfiguration settings = _influxConfiguration.Value;
 
-    List<PointData> points = readings.Select(
-      r => PointData.Measurement(r.Measurement)
-        .Field("value", (double)r.Value)
-        .Timestamp(r.AsOf, WritePrecision.Ms)
-        .Tag("source", r.Source)
-        .Tag("host", _hostname)
-    ).ToList();
+      GetOrCreateClient();
+      WriteApiAsync? writeApi = _influx.GetWriteApiAsync();
 
-    await writeApi.WritePointsAsync(points, settings.Bucket, settings.Organisation, cancelToken);
+      List<PointData> points = readings.Select(
+        r => PointData.Measurement(r.Measurement)
+          .Field("value", (double)r.Value)
+          .Timestamp(r.AsOf, WritePrecision.Ms)
+          .Tag("source", r.Source)
+          .Tag("host", _hostname)
+      ).ToList();
+
+      await writeApi.WritePointsAsync(points, settings.Bucket, settings.Organisation, cancelToken);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "An error occurred persisting data in influx.");
+    }
   }
 
   public IEnumerable<IReading> GetAll() => throw new NotImplementedException();

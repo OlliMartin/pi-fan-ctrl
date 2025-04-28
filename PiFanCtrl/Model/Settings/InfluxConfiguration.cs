@@ -11,4 +11,6 @@ public class InfluxConfiguration
   public string Organisation { get; init; }
 
   public string Bucket { get; init; }
+
+  public TimeSpan RenewClientAfter { get; init; } = TimeSpan.FromMinutes(minutes: 5);
 }

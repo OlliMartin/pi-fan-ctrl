@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
 using PiFanCtrl.Components;
 using PiFanCtrl.Factories;
 using PiFanCtrl.Interfaces;
@@ -23,7 +25,31 @@ builder.Services.AddLogging(
   opts =>
   {
     opts.SetMinimumLevel(LogLevel.Debug);
-    opts.AddConsole();
+
+#if !DEBUG
+      opts.AddConsole();
+#else
+    opts.AddOpenTelemetry(
+      otelOptions =>
+      {
+        ResourceBuilder resourceBuilder =
+          ResourceBuilder.CreateDefault().AddService(
+              "fan-control",
+              "acaad.dev",
+              serviceInstanceId: System.Net.Dns.GetHostName()
+            )
+            .AddEnvironmentVariableDetector();
+
+        otelOptions.SetResourceBuilder(resourceBuilder);
+
+        otelOptions.IncludeScopes = true;
+        otelOptions.IncludeFormattedMessage = true;
+        otelOptions.ParseStateValues = true;
+
+        otelOptions.AddOtlpExporter();
+      }
+    );
+#endif
   }
 );
 
