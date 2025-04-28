@@ -20,7 +20,7 @@ public class FanRpmWorker(
     logger.LogInformation("Starting fan rpm worker.");
 
     _cts = new();
-    _ = RunTimerAsync(_cts.Token);
+    _ = Task.Run(() => RunTimerAsync(_cts.Token), cancellationToken);
 
     swStart.Stop();
     logger.LogInformation("{wName} started in {elapsed}.", nameof(FanRpmWorker), swStart.Elapsed);

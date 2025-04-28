@@ -23,7 +23,7 @@ public class PwmControlWorker(
     logger.LogInformation("Starting pwm control worker.");
 
     _cts = new();
-    _ = RunTimerAsync(_cts.Token);
+    _ = Task.Run(() => RunTimerAsync(_cts.Token), cancellationToken);
 
     logger.LogInformation("Initializing duty cycle to {val}.", DEFAULT_DUTY_CYCLE);
     await pwmController.SetDutyCycleAsync(DEFAULT_DUTY_CYCLE, cancellationToken);
