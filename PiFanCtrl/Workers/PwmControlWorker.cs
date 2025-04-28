@@ -50,9 +50,16 @@ public class PwmControlWorker(
 
   public async Task StopAsync(CancellationToken cancellationToken)
   {
-    await pwmController.SetDutyCycleAsync(percentage: 100, CancellationToken.None);
+    try
+    {
+      await pwmController.SetDutyCycleAsync(percentage: 100, CancellationToken.None);
 
-    await (_cts?.CancelAsync() ?? Task.CompletedTask);
-    _cts?.Dispose();
+      await (_cts?.CancelAsync() ?? Task.CompletedTask);
+      _cts?.Dispose();
+    }
+    catch (Exception ex)
+    {
+      logger.LogError(ex, "An error occurred stopping worker {wName}.", GetType().Name);
+    }
   }
 }

@@ -1,10 +1,11 @@
 using PiFanCtrl.Interfaces;
+using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Workers;
 
 public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor) : IHostedService
 {
-  private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(5));
+  private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(seconds: 5));
 
   private CancellationTokenSource? _cts;
 
@@ -12,7 +13,7 @@ public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor)
   {
     logger.LogInformation("Starting fan rpm worker.");
 
-    _cts = new CancellationTokenSource();
+    _cts = new();
     _ = RunTimerAsync(_cts.Token);
 
     return Task.CompletedTask;
@@ -24,7 +25,7 @@ public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor)
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
-        var reading = await rpmSensor.ReadNextValueAsync(cancelToken);
+        FanRpmReading? reading = await rpmSensor.ReadNextValueAsync(cancelToken);
       }
     }
     catch (OperationCanceledException)
@@ -41,7 +42,14 @@ public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor)
 
   public async Task StopAsync(CancellationToken cancellationToken)
   {
-    await (_cts?.CancelAsync() ?? Task.CompletedTask);
-    _cts?.Dispose();
+    try
+    {
+      await (_cts?.CancelAsync() ?? Task.CompletedTask);
+      _cts?.Dispose();
+    }
+    catch (Exception ex)
+    {
+      logger.LogError(ex, "An error occurred stopping worker {wName}.", GetType().Name);
+    }
   }
 }
