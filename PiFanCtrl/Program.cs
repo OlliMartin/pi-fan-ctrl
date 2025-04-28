@@ -26,8 +26,8 @@ builder.Services.AddLogging(
   {
     opts.SetMinimumLevel(LogLevel.Debug);
 
-#if !DEBUG
-      opts.AddConsole();
+#if DEBUG
+    opts.AddConsole();
 #else
     opts.AddOpenTelemetry(
       otelOptions =>
