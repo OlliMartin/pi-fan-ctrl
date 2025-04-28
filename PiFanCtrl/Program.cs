@@ -16,6 +16,8 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
   .AddInteractiveServerComponents();
 
+builder.Services.AddSystemd();
+
 builder.Services.AddLogging(
   opts =>
   {
