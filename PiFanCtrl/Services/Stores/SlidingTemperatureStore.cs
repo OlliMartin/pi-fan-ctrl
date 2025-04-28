@@ -8,7 +8,7 @@ namespace PiFanCtrl.Services.Stores;
 
 public class SlidingTemperatureStore : ITemperatureStore
 {
-  private const int WINDOW_SIZE = 10;
+  private const int WINDOW_SIZE = 1000;
   private readonly CircularBuffer<TemperatureReading> _buffer = new(WINDOW_SIZE);
 
   public Task AddAsync(TemperatureReading reading, CancellationToken cancelToken = default)
