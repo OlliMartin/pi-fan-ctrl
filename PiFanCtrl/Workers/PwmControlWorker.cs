@@ -50,6 +50,8 @@ public class PwmControlWorker(
 
   public async Task StopAsync(CancellationToken cancellationToken)
   {
+    logger.LogInformation("{wName} is stopping.", nameof(PwmControlWorker));
+
     try
     {
       await pwmController.SetDutyCycleAsync(percentage: 100, CancellationToken.None);

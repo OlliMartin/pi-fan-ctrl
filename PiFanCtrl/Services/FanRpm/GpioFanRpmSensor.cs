@@ -16,40 +16,53 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
   private readonly IOptions<FanRpmPinConfiguration> _pinOptions;
 
   private readonly Stopwatch _lastMeasurement = Stopwatch.StartNew();
-  
+
   public GpioFanRpmSensor(ILogger<GpioFanRpmSensor> logger, IOptions<FanRpmPinConfiguration> pinOptions)
   {
     _logger = logger;
     _pinOptions = pinOptions;
 
-    var pinSettings = pinOptions.Value;
+    FanRpmPinConfiguration pinSettings = pinOptions.Value;
 
     _logger.LogInformation("Starting fan rpm sensor on pin {pin}.", pinSettings.Pin);
-    
+
     _gpioController = new();
     _gpioController.OpenPin(pinSettings.Pin, PinMode.InputPullUp);
-    _gpioController.RegisterCallbackForPinValueChangedEvent(pinSettings.Pin, PinEventTypes.Falling,
-      OnSignalPinFallEvent);
+
+    _gpioController.RegisterCallbackForPinValueChangedEvent(
+      pinSettings.Pin,
+      PinEventTypes.Falling,
+      OnSignalPinFallEvent
+    );
   }
 
   public Task<FanRpmReading?> ReadNextValueAsync(CancellationToken cancelToken = default)
   {
-    var interruptCount = Interlocked.Exchange(ref _interruptsSinceLastMeasurement, 0);
-    var duration = _lastMeasurement.Elapsed;
+    int interruptCount = Interlocked.Exchange(ref _interruptsSinceLastMeasurement, value: 0);
+    TimeSpan duration = _lastMeasurement.Elapsed;
     _lastMeasurement.Restart();
-    
-    var rpm = (interruptCount / 2m * (decimal)TimeSpan.FromMinutes(1).TotalNanoseconds) / ((decimal)duration.TotalNanoseconds);
-    
-    _logger.LogInformation("{cnt} interrupts occurred in {duration}, RPM is: {rpm}", interruptCount, duration, rpm);
-    
-    return Task.FromResult<FanRpmReading?>(new()
-    {
-      Sensor = Name,
-      Value = rpm
-    });
+
+    decimal rpm = interruptCount / 2m * (decimal)TimeSpan.FromMinutes(minutes: 1).TotalNanoseconds /
+                  (decimal)duration.TotalNanoseconds;
+
+    _logger.LogInformation(
+      "{cnt} interrupts occurred in {duration}, RPM is: {rpm}",
+      interruptCount,
+      duration,
+      rpm
+    );
+
+    return Task.FromResult<FanRpmReading?>(
+      new()
+      {
+        Sensor = Name,
+        Value = rpm,
+      }
+    );
   }
-  
+
   private int _interruptsSinceLastMeasurement = 0;
+
   private void OnSignalPinFallEvent(object sender, PinValueChangedEventArgs args)
   {
     Interlocked.Increment(ref _interruptsSinceLastMeasurement);
@@ -57,6 +70,14 @@ public sealed class GpioFanRpmSensor : IFanRpmSensor, IDisposable
 
   public void Dispose()
   {
+    Stopwatch sw = Stopwatch.StartNew();
+    _logger.LogInformation("Disposing {name}.", nameof(GpioFanRpmSensor));
+
+    FanRpmPinConfiguration pinSettings = _pinOptions.Value;
+    _gpioController.UnregisterCallbackForPinValueChangedEvent(pinSettings.Pin, OnSignalPinFallEvent);
     _gpioController.Dispose();
+
+    sw.Stop();
+    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(GpioFanRpmSensor), sw.Elapsed);
   }
 }

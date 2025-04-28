@@ -42,6 +42,8 @@ public class FanRpmWorker(ILogger<FanRpmWorker> logger, IFanRpmSensor rpmSensor)
 
   public async Task StopAsync(CancellationToken cancellationToken)
   {
+    logger.LogInformation("{wName} is stopping.", nameof(FanRpmWorker));
+
     try
     {
       await (_cts?.CancelAsync() ?? Task.CompletedTask);

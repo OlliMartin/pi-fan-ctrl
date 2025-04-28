@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
@@ -12,11 +13,16 @@ namespace PiFanCtrl.Services.Stores;
 public sealed class InfluxTemperatureStore
   : ITemperatureStore, IDisposable
 {
+  private readonly ILogger _logger;
   private readonly IOptions<InfluxConfiguration> _influxConfiguration;
   private readonly InfluxDBClient _influx;
 
-  public InfluxTemperatureStore(IOptions<InfluxConfiguration> influxConfiguration)
+  public InfluxTemperatureStore(
+    ILogger<InfluxTemperatureStore> logger,
+    IOptions<InfluxConfiguration> influxConfiguration
+  )
   {
+    _logger = logger;
     _influxConfiguration = influxConfiguration;
     InfluxConfiguration settings = influxConfiguration.Value;
 
@@ -54,6 +60,12 @@ public sealed class InfluxTemperatureStore
 
   public void Dispose()
   {
+    Stopwatch sw = Stopwatch.StartNew();
+    _logger.LogInformation("Disposing {name}.", nameof(InfluxTemperatureStore));
+
     _influx.Dispose();
+
+    sw.Stop();
+    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(InfluxTemperatureStore), sw.Elapsed);
   }
 }

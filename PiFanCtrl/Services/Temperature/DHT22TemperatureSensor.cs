@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Iot.Device.DHTxx;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
@@ -52,6 +53,12 @@ public sealed class DHT22TemperatureSensor : ITemperatureSensor, IDisposable
 
   public void Dispose()
   {
+    Stopwatch sw = Stopwatch.StartNew();
+    _logger.LogInformation("Disposing {name}.", nameof(DHT22TemperatureSensor));
+
     _dht.Dispose();
+
+    sw.Stop();
+    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(DHT22TemperatureSensor), sw.Elapsed);
   }
 }
