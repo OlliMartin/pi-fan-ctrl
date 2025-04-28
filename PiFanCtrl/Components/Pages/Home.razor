@@ -1,10 +1,27 @@
 ﻿@page "/"
 @using PiFanCtrl.Services
+@using PiFanCtrl.Services.Stores
+@using PiFanCtrl.Services.Temperature
+@inject FanSpeedCalculator calculator
+@inject SlidingReadingStore readingStore
+@inject DummyTemperatureSensor tempSensor
+@inject NavigationManager navigationManager
 
 <PageTitle>Home</PageTitle>
 
 <div class="container-fluid overflow-x-auto">
     <LineChart @ref="lineChart" Width="800"/>
+
+    <EditForm Model="Model" OnValidSubmit="SubmitAsync" FormName="Simulation">
+        <DataAnnotationsValidator/>
+        <ValidationSummary/>
+
+        <InputNumber @bind-Value="Model!.Temperature" min="0" max="120"/>
+
+        <button type="submit">Submit</button>
+    </EditForm>
+
+    <button @onclick="Reset">Reset</button>
 </div>
 
 @code {
@@ -12,43 +29,43 @@
     private LineChartOptions lineChartOptions = default!;
     private ChartData chartData = default!;
 
-    private int offThreshold = 30;
-    private int panicFrom = 80;
-    private decimal multiplier = 1.2m;
-
-    private async Task<decimal> CalculateFanSpeed(decimal temperature)
-    {
-        if (temperature < offThreshold)
-        {
-            return 0;
-        }
-
-        if (temperature >= panicFrom)
-        {
-            return 100;
-        }
-
-        return Math.Min(val1: 100, temperature * multiplier);
-    }
-
     protected async override Task OnInitializedAsync()
     {
         string[] colors = ColorUtility.CategoricalTwelveColors;
 
         List<string> labels = Enumerable.Range(start: 0, count: 100).Select(num => num).Select(val => val.ToString()).ToList();
-        List<IChartDataset>? datasets = new();
+        List<IChartDataset> datasets = new();
 
-        LineChartDataset? dataset1 = new()
+        LineChartDataset dataset1 = new()
         {
-            Label = "Temperature",
-            Data = (await Task.WhenAll(Enumerable.Range(start: 0, count: 100).Select(num => num).Select(i => CalculateFanSpeed(i)))).Select(val => (double?)val).ToList(),
+            Label = "Fan Speed (%)",
+            Data = Enumerable.Range(start: 0, count: 100).Select(num => num).Select(i => calculator.CalculateFanSpeed(i)).Select(val => (double?)val).ToList(),
             BackgroundColor = colors[0],
             BorderColor = colors[0],
             BorderWidth = 2,
             HoverBorderWidth = 4,
+            PointRadius = [0,],
         };
 
         datasets.Add(dataset1);
+
+        decimal? latestAggregate = readingStore.GetLatest(TemperatureWrapper.AGGREGATE_READING_NAME);
+
+        if (latestAggregate is not null)
+        {
+            LineChartDataset dataset2 = new()
+            {
+                Label = "Current Temperature",
+                Data = Enumerable.Range(start: 0, count: 100).Select(_ => (double?)latestAggregate).ToList(),
+                BackgroundColor = colors[2],
+                BorderColor = colors[2],
+                BorderWidth = 2,
+                HoverBorderWidth = 4,
+                PointRadius = [0,],
+            };
+
+            datasets.Add(dataset2);
+        }
 
         chartData = new() { Labels = labels, Datasets = datasets, };
 
@@ -71,6 +88,31 @@
         }
 
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public TestModel Model { get; set; } = null!;
+
+    public async Task SubmitAsync()
+    {
+        if (Model?.Temperature is not null)
+        {
+            tempSensor.Simulate(Model.Temperature.Value);
+            navigationManager.NavigateTo("/", forceLoad: true);
+        }
+    }
+
+    public async Task Reset()
+    {
+        tempSensor.Reset();
+        navigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    protected override void OnInitialized() =>
+        Model ??= new() { };
+
+    public class TestModel
+    {
+        public decimal? Temperature { get; set; }
     }
 
 }

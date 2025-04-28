@@ -9,7 +9,8 @@ public class TemperatureWrapper(
 )
   : ITemperatureSensor
 {
-  public string Name => "Aggregate";
+  public const string AGGREGATE_READING_NAME = "Aggregate";
+  public string Name => AGGREGATE_READING_NAME;
 
   public async Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(
     CancellationToken cancelToken = default

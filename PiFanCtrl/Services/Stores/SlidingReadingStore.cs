@@ -25,4 +25,9 @@ public class SlidingReadingStore : IReadingStore
   }
 
   public IEnumerable<IReading> GetAll() => _buffer;
+
+  public decimal? GetLatest(string source)
+  {
+    return _buffer.Where(r => r.Source == source).OrderByDescending(r => r.AsOf).FirstOrDefault()?.Value;
+  }
 }

@@ -71,6 +71,7 @@ builder.Services.Configure<RootSettings>(rootConfiguration)
   .Configure<InfluxConfiguration>(influxConfiguration);
 
 builder.Services
+  .AddSingleton<FanSpeedCalculator>()
   .AddSingleton<SlidingReadingStore>()
   .AddSingleton<IReadingStore>(sp => sp.GetRequiredService<SlidingReadingStore>())
   .AddSingleton<ITemperatureSensor, DummyTemperatureSensor>()

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
+using PiFanCtrl.Services;
 using PiFanCtrl.Services.Pwm;
 
 namespace PiFanCtrl.Workers;
@@ -8,6 +9,7 @@ namespace PiFanCtrl.Workers;
 public class PwmControlWorker(
   [FromKeyedServices("delegating")] ITemperatureSensor temperatureSensor,
   PwmControllerWrapper pwmController,
+  FanSpeedCalculator speedCalculator,
   IReadingStore readingStore,
   ILogger<PwmControlWorker> logger
 ) : IHostedService
@@ -39,6 +41,15 @@ public class PwmControlWorker(
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
         IEnumerable<TemperatureReading>? reading = await temperatureSensor.ReadNextValuesAsync(cancelToken);
+
+        List<TemperatureReading>? readingList = reading?.ToList();
+        TemperatureReading? singleOrDefault = readingList?.SingleOrDefault();
+
+        if (singleOrDefault is not null)
+        {
+          decimal targetPercentage = speedCalculator.CalculateFanSpeed(singleOrDefault.Value);
+          await pwmController.SetDutyCycleAsync(targetPercentage, cancelToken);
+        }
       }
     }
     catch (OperationCanceledException)
