@@ -51,12 +51,23 @@ public class DeviceData
   [JsonPropertyName("general_temperature")]
   public float? GeneralTemperature { get; init; }
 
-  public decimal GetTemperature() =>
-    // TODO: This function is wrong; Figure out how to retrieve data.
-    (decimal)(GeneralTemperature ?? Temperatures.FirstOrDefault()?.Value ?? -1f);
-
   public bool CanGetTemperature() =>
     (HasTemperature && GeneralTemperature is not null) || Temperatures.Count > 0;
+
+  public IEnumerable<(string Name, string Suffix, decimal Value)> GetReadings()
+  {
+    if (Temperatures.Count > 0)
+    {
+      return Temperatures.Select(tmp => (Name, $"-{tmp.Name}", (decimal)tmp.Value));
+    }
+
+    if (GeneralTemperature is not null)
+    {
+      return [(Name, string.Empty, (decimal)GeneralTemperature.Value),];
+    }
+
+    return [];
+  }
 }
 
 public class DeviceResponse

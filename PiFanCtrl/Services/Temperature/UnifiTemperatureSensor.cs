@@ -48,17 +48,20 @@ public class UnifiTemperatureSensor : ITemperatureSensor
 
       UnifiSensorsConfiguration settings = _unifiOptions.Value;
 
-      IEnumerable<(DeviceData Data, UnifiDevice Device)> mappedToSensor = response.Data
-        .Where(device => device.CanGetTemperature())
-        .Where(device => settings.Devices.SingleOrDefault(sd => sd.Name == device.Name) is not null)
-        .Select(device => (device, settings.Devices.Single(sd => sd.Name == device.Name)));
+      IEnumerable<((string Name, string Suffix, decimal Value) Triple, UnifiDevice Device)> mappedToSensor =
+        response
+          .Data
+          .Where(device => device.CanGetTemperature())
+          .Where(device => settings.Devices.SingleOrDefault(sd => sd.Name == device.Name) is not null)
+          .SelectMany(device => device.GetReadings())
+          .Select(device => (device, settings.Devices.Single(sd => sd.Name == device.Name)));
 
       return mappedToSensor.Select(
         (tuple) => new TemperatureReading()
         {
-          Sensor = $"unifi-{tuple.Device.FriendlyName}",
+          Sensor = $"unifi-{tuple.Device.FriendlyName}{tuple.Triple.Suffix}",
           // TODO: This function is wrong; Figure out how to retrieve data.
-          Value = tuple.Data.GetTemperature(),
+          Value = tuple.Triple.Value,
         }
       );
     }
