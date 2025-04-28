@@ -48,7 +48,6 @@ public class PwmControlWorker(
     catch (Exception ex)
     {
       logger.LogError(ex, "An error occurred during pwm processing.");
-
       throw;
     }
   }
