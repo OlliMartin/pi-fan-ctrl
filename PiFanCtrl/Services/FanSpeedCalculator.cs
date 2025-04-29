@@ -3,8 +3,8 @@ namespace PiFanCtrl.Services;
 public class FanSpeedCalculator
 {
   private int offThreshold = 30;
-  private int panicFrom = 80;
-  private decimal multiplier = 1.2m;
+  private int panicFrom = 70;
+  private decimal multiplier = 0.9m;
 
   public decimal CalculateFanSpeed(decimal temperature)
   {
