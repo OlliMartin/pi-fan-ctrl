@@ -11,7 +11,7 @@ namespace PiFanCtrl.Services.Temperature;
 
 public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 {
-  private const int DEVICE_OPEN_RETRIES = 5;
+  private const int DEVICE_OPEN_RETRIES = 50;
 
   private readonly ILogger<Bmp280TemperatureSensor> _logger;
   private readonly I2CSensorConfiguration _sensorConfiguration;
@@ -47,6 +47,7 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
     int i = 1;
 
     for (; i <= DEVICE_OPEN_RETRIES; i++)
+    {
       try
       {
         _logger.LogDebug(
@@ -75,6 +76,9 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
           throw;
         }
       }
+
+      Task.Delay(TimeSpan.FromSeconds(seconds: 1)).GetAwaiter().GetResult();
+    }
 
     sw.Stop();
 
