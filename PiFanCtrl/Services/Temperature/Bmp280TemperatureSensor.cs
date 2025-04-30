@@ -18,8 +18,8 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
   public string Name => $"BMP280-Bus-{_sensorConfiguration.I2CAddress}-Addr-{_i2cAddress}";
 
   private readonly int _i2cAddress;
-  private I2cDevice _i2cDevice;
-  private Bmp280 _sensor;
+  private I2cDevice? _i2cDevice;
+  private Bmp280? _sensor;
 
   public Bmp280TemperatureSensor(
     ILogger<Bmp280TemperatureSensor> logger,
@@ -38,7 +38,15 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     _logger.LogInformation("I2C result {res}", read);
 
-    CreateSensor(sensorConfiguration);
+    try
+    {
+      CreateSensor(sensorConfiguration);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Cannot open temperature sensor.");
+      throw;
+    }
   }
 
   private void CreateSensor(I2CSensorConfiguration sensorConfiguration)
@@ -85,8 +93,11 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
       sw.Elapsed
     );
 
-    _sensor.TemperatureSampling = Sampling.LowPower;
-    _sensor.PressureSampling = Sampling.UltraHighResolution;
+    if (_sensor is not null)
+    {
+      _sensor.TemperatureSampling = Sampling.LowPower;
+      _sensor.PressureSampling = Sampling.UltraHighResolution;
+    }
   }
 
   public async Task<IEnumerable<TemperatureReading>> ReadNextValuesAsync(
@@ -98,8 +109,10 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     try
     {
-      Bmp280ReadResult reading = await _sensor.ReadAsync();
-      val = (decimal?)reading.Temperature?.Value;
+      Bmp280ReadResult? reading =
+        await (_sensor?.ReadAsync() ?? Task.FromResult<Bmp280ReadResult>(null!));
+
+      val = (decimal?)reading?.Temperature?.Value;
 
       if (val is not null)
       {
