@@ -39,7 +39,7 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
     _i2cDevice = I2cDevice.Create(i2cSettings);
     _sensor = new(_i2cDevice);
 
-    _sensor.TemperatureSampling = Sampling.UltraHighResolution;
+    _sensor.TemperatureSampling = Sampling.LowPower;
     _sensor.PressureSampling = Sampling.UltraHighResolution;
   }
 
