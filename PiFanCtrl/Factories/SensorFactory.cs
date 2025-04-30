@@ -31,7 +31,7 @@ public static class SensorFactory
     {
       TemperatureSensor.Unifi => sensorConfiguration.Get<UnifiSensorsConfiguration>(),
       TemperatureSensor.DHT22 => sensorConfiguration.Get<HardwareSensorConfiguration>(),
-      TemperatureSensor.BMP280 => sensorConfiguration.Get<HardwareSensorConfiguration>(),
+      TemperatureSensor.BMP280 => sensorConfiguration.Get<I2CSensorConfiguration>(),
       var _ => throw new InvalidOperationException(
         $"Unknown sensor type {type}. This is a configuration error."
       ),
