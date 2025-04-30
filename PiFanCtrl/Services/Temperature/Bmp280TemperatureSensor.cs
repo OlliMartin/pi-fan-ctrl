@@ -45,7 +45,6 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
     catch (Exception ex)
     {
       _logger.LogError(ex, "Cannot open temperature sensor.");
-      throw;
     }
   }
 
