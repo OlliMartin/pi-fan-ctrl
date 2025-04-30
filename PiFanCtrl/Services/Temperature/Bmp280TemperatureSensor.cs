@@ -29,6 +29,13 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     _i2cAddress = _sensorConfiguration.I2CAddress ?? Bmp280.DefaultI2cAddress;
 
+    _logger.LogInformation("Hello I2C!");
+    using I2cDevice i2c = I2cDevice.Create(new(busId: 1, deviceAddress: 0x12));
+    i2c.WriteByte(value: 0x42);
+    byte read = i2c.ReadByte();
+
+    _logger.LogInformation("I2C result {res}", read);
+
     _logger.LogInformation(
       "Starting temperature sensor on bus {busId} and address {addr}.",
       sensorConfiguration.BusId,
