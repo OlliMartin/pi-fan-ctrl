@@ -31,7 +31,8 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     ScanI2C();
 
-    _i2cAddress = _sensorConfiguration.I2CAddress ?? Bmp280.DefaultI2cAddress;
+    // _sensorConfiguration.I2CAddress ?? Bmp280.DefaultI2cAddress
+    _i2cAddress = 0x76;
 
     try
     {
