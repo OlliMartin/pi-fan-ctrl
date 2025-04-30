@@ -76,6 +76,11 @@ public static class SensorFactory
     I2CSensorConfiguration i2cCfg
   )
   {
+    if (OperatingSystem.IsWindows())
+    {
+      return;
+    }
+
     if (i2cCfg.Type == TemperatureSensor.BMP280)
     {
       serviceCollection.AddSingleton<ITemperatureSensor>(

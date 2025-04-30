@@ -167,7 +167,26 @@ public class UnifiAuthenticationMessageHandler : DelegatingHandler
       cancelToken
     );
 
-    response.EnsureSuccessStatusCode();
+    if (!response.IsSuccessStatusCode)
+    {
+      string content = string.Empty;
+
+      try
+      {
+        content = await response.Content.ReadAsStringAsync(cancelToken);
+      }
+      catch (Exception)
+      {
+// Nothing to do here
+      }
+
+      _logger.LogWarning("Could not obtain JWT from unifi controller. Response: {res}", content);
+
+      throw new InvalidOperationException(
+        $"Unifi controller returned unexpected status code {response.StatusCode} ({response.ReasonPhrase})."
+      );
+    }
+
     TokenResponse? parsed = await response.Content.ReadFromJsonAsync<TokenResponse>(cancelToken);
 
     if (parsed is null)
