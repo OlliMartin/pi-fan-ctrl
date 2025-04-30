@@ -15,7 +15,7 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
   private readonly ILogger<Bmp280TemperatureSensor> _logger;
   private readonly I2CSensorConfiguration _sensorConfiguration;
-  public string Name => $"BMP280-Bus-{_sensorConfiguration.I2CAddress}-Addr-{_i2cAddress}";
+  public string Name => $"BMP280-Bus-{_sensorConfiguration.BusId}-Addr-{_i2cAddress}";
 
   private readonly int _i2cAddress;
   private I2cDevice? _i2cDevice;
