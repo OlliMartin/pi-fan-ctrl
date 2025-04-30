@@ -9,7 +9,7 @@ using PiFanCtrl.Model.Settings;
 
 namespace PiFanCtrl.Services.Temperature;
 
-public class Bmp280TemperatureSensor : ITemperatureSensor
+public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 {
   private readonly ILogger<Bmp280TemperatureSensor> _logger;
   private readonly I2CSensorConfiguration _sensorConfiguration;
@@ -79,5 +79,17 @@ public class Bmp280TemperatureSensor : ITemperatureSensor
       sw.Stop();
       _logger.LogDebug("{sName} read temperature {val} in {elapsed}.", Name, val ?? int.MinValue, sw.Elapsed);
     }
+  }
+
+  public void Dispose()
+  {
+    Stopwatch sw = Stopwatch.StartNew();
+    _logger.LogInformation("Disposing {name}.", nameof(Bmp280TemperatureSensor));
+
+    _sensor.Dispose();
+    _i2cDevice.Dispose();
+
+    sw.Stop();
+    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(Bmp280TemperatureSensor), sw.Elapsed);
   }
 }

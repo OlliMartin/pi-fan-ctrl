@@ -55,6 +55,9 @@ public static class SensorFactory
   {
     switch (sensorConfiguration)
     {
+      case I2CSensorConfiguration i2cCfg:
+        RegisterI2CService(serviceCollection, i2cCfg);
+        break;
       case HardwareSensorConfiguration hardwareCfg:
         RegisterHardwareService(serviceCollection, hardwareCfg);
         break;
@@ -65,6 +68,28 @@ public static class SensorFactory
         throw new InvalidOperationException(
           $"Unknown sensor configuration type {sensorConfiguration.GetType().FullName}. This is a programming error."
         );
+    }
+  }
+
+  private static void RegisterI2CService(
+    IServiceCollection serviceCollection,
+    I2CSensorConfiguration i2cCfg
+  )
+  {
+    if (i2cCfg.Type == TemperatureSensor.BMP280)
+    {
+      serviceCollection.AddSingleton<ITemperatureSensor>(
+        sp =>
+        {
+          ILogger<Bmp280TemperatureSensor> logger = sp.GetRequiredService<ILogger<Bmp280TemperatureSensor>>();
+          Bmp280TemperatureSensor sensor = new(logger, i2cCfg);
+          return sensor;
+        }
+      );
+    }
+    else
+    {
+      throw new InvalidOperationException($"Unhandled/unknown sensor type {i2cCfg.Type}. Cannot start.");
     }
   }
 
@@ -80,17 +105,6 @@ public static class SensorFactory
         {
           ILogger<DHT22TemperatureSensor> logger = sp.GetRequiredService<ILogger<DHT22TemperatureSensor>>();
           DHT22TemperatureSensor sensor = new(logger, hardwareCfg);
-          return sensor;
-        }
-      );
-    }
-    else if (hardwareCfg.Type == TemperatureSensor.BMP280)
-    {
-      serviceCollection.AddSingleton<ITemperatureSensor>(
-        sp =>
-        {
-          ILogger<Bmp280TemperatureSensor> logger = sp.GetRequiredService<ILogger<Bmp280TemperatureSensor>>();
-          Bmp280TemperatureSensor sensor = new(logger, hardwareCfg);
           return sensor;
         }
       );

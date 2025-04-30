@@ -1,6 +1,6 @@
 namespace PiFanCtrl.Model.Settings;
 
-public class I2CSensorConfiguration
+public class I2CSensorConfiguration : SensorConfiguration
 {
   public int BusId { get; init; }
 
