@@ -11,13 +11,15 @@ namespace PiFanCtrl.Services.Temperature;
 
 public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 {
+  private const int DEVICE_OPEN_RETRIES = 5;
+
   private readonly ILogger<Bmp280TemperatureSensor> _logger;
   private readonly I2CSensorConfiguration _sensorConfiguration;
   public string Name => $"BMP280-Bus-{_sensorConfiguration.I2CAddress}-Addr-{_i2cAddress}";
 
   private readonly int _i2cAddress;
-  private readonly I2cDevice _i2cDevice;
-  private readonly Bmp280 _sensor;
+  private I2cDevice _i2cDevice;
+  private Bmp280 _sensor;
 
   public Bmp280TemperatureSensor(
     ILogger<Bmp280TemperatureSensor> logger,
@@ -36,15 +38,52 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     _logger.LogInformation("I2C result {res}", read);
 
-    _logger.LogInformation(
-      "Starting temperature sensor on bus {busId} and address {addr}.",
-      sensorConfiguration.BusId,
-      _i2cAddress
-    );
+    CreateSensor(sensorConfiguration);
+  }
 
-    I2cConnectionSettings i2cSettings = new(_sensorConfiguration.BusId, _i2cAddress);
-    _i2cDevice = I2cDevice.Create(i2cSettings);
-    _sensor = new(_i2cDevice);
+  private void CreateSensor(I2CSensorConfiguration sensorConfiguration)
+  {
+    Stopwatch sw = Stopwatch.StartNew();
+    int i = 1;
+
+    for (; i <= DEVICE_OPEN_RETRIES; i++)
+      try
+      {
+        _logger.LogDebug(
+          "Starting temperature sensor on bus {busId} and address {addr}.",
+          sensorConfiguration.BusId,
+          _i2cAddress
+        );
+
+        I2cConnectionSettings i2cSettings = new(_sensorConfiguration.BusId, _i2cAddress);
+        _i2cDevice = I2cDevice.Create(i2cSettings);
+        _sensor = new(_i2cDevice);
+
+        break;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogWarning(
+          ex,
+          "An error occurred opening device {dev}. Retrying up to {cnt} times.",
+          Name,
+          DEVICE_OPEN_RETRIES
+        );
+
+        if (i == DEVICE_OPEN_RETRIES)
+        {
+          throw;
+        }
+      }
+
+    sw.Stop();
+
+    _logger.LogInformation(
+      "Temperature sensor {name} connected after {retryCount} attempts in {elapsed}.",
+      Name,
+      i,
+      sw.Elapsed
+    );
 
     _sensor.TemperatureSampling = Sampling.LowPower;
     _sensor.PressureSampling = Sampling.UltraHighResolution;
