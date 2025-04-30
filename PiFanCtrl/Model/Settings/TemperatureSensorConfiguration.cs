@@ -6,7 +6,8 @@ namespace PiFanCtrl.Model.Settings;
 public enum TemperatureSensor
 {
   DHT22,
-  Unifi
+  Unifi,
+  BMP280,
 }
 
 public class HardwareSensorConfiguration : SensorConfiguration
@@ -17,7 +18,7 @@ public class HardwareSensorConfiguration : SensorConfiguration
 public class SensorConfiguration
 {
   public const string TYPE_SECTION = nameof(Type);
-  
+
   public TemperatureSensor Type { get; init; }
 }
 

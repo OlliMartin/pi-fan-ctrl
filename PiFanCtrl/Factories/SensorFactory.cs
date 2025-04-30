@@ -12,25 +12,29 @@ public static class SensorFactory
     IConfiguration sensorRootConfiguration
   )
   {
-    var sensorConfiguration =
+    IConfigurationSection sensorConfiguration =
       sensorRootConfiguration.GetSection(TemperatureSensorConfiguration.SENSOR_SECTION);
 
-    foreach (var sensorDef in sensorConfiguration.GetChildren())
+    foreach (IConfigurationSection sensorDef in sensorConfiguration.GetChildren())
     {
-      var settingsInstance = GetSettingsInstance(sensorDef);
+      SensorConfiguration settingsInstance = GetSettingsInstance(sensorDef);
       RegisterServiceForSetting(serviceCollection, sensorDef, settingsInstance);
     }
   }
 
   private static SensorConfiguration GetSettingsInstance(IConfiguration sensorConfiguration)
   {
-    var type = sensorConfiguration.GetValue<TemperatureSensor>(SensorConfiguration.TYPE_SECTION);
+    TemperatureSensor type =
+      sensorConfiguration.GetValue<TemperatureSensor>(SensorConfiguration.TYPE_SECTION);
 
     SensorConfiguration? result = type switch
     {
       TemperatureSensor.Unifi => sensorConfiguration.Get<UnifiSensorsConfiguration>(),
       TemperatureSensor.DHT22 => sensorConfiguration.Get<HardwareSensorConfiguration>(),
-      _ => throw new InvalidOperationException($"Unknown sensor type {type}. This is a configuration error.")
+      TemperatureSensor.BMP280 => sensorConfiguration.Get<HardwareSensorConfiguration>(),
+      var _ => throw new InvalidOperationException(
+        $"Unknown sensor type {type}. This is a configuration error."
+      ),
     };
 
     if (result is null)
@@ -43,7 +47,11 @@ public static class SensorFactory
     return result;
   }
 
-  private static void RegisterServiceForSetting(IServiceCollection serviceCollection, IConfiguration configurationSection, SensorConfiguration sensorConfiguration)
+  private static void RegisterServiceForSetting(
+    IServiceCollection serviceCollection,
+    IConfiguration configurationSection,
+    SensorConfiguration sensorConfiguration
+  )
   {
     switch (sensorConfiguration)
     {
@@ -67,16 +75,29 @@ public static class SensorFactory
   {
     if (hardwareCfg.Type == TemperatureSensor.DHT22)
     {
-      serviceCollection.AddSingleton<ITemperatureSensor>(sp =>
-      {
-        var logger = sp.GetRequiredService<ILogger<DHT22TemperatureSensor>>();
-        var sensor = new DHT22TemperatureSensor(logger, hardwareCfg);
-        return sensor;
-      });
+      serviceCollection.AddSingleton<ITemperatureSensor>(
+        sp =>
+        {
+          ILogger<DHT22TemperatureSensor> logger = sp.GetRequiredService<ILogger<DHT22TemperatureSensor>>();
+          DHT22TemperatureSensor sensor = new(logger, hardwareCfg);
+          return sensor;
+        }
+      );
+    }
+    else if (hardwareCfg.Type == TemperatureSensor.BMP280)
+    {
+      serviceCollection.AddSingleton<ITemperatureSensor>(
+        sp =>
+        {
+          ILogger<Bmp280TemperatureSensor> logger = sp.GetRequiredService<ILogger<Bmp280TemperatureSensor>>();
+          Bmp280TemperatureSensor sensor = new(logger, hardwareCfg);
+          return sensor;
+        }
+      );
     }
     else
     {
       throw new InvalidOperationException($"Unhandled/unknown sensor type {hardwareCfg.Type}. Cannot start.");
-    }   
+    }
   }
 }
