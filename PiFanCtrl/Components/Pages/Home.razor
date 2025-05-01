@@ -25,21 +25,38 @@
 </div>
 
 @code {
+    private const decimal GRAPH_X_START = 15m;
+    private const decimal GRAPH_X_END = 120m;
+    private const decimal GRAPH_Y_START = 0m;
+    private const decimal GRAPH_Y_END = 100m;
+    private const decimal GRAPH_RESOLUTION = 0.1m;
+
     private LineChart lineChart = default!;
     private LineChartOptions lineChartOptions = default!;
     private ChartData chartData = default!;
+
+    private IEnumerable<decimal> MakeBaseGraph()
+    {
+        decimal curr = GRAPH_X_START;
+
+        while (curr <= GRAPH_X_END)
+        {
+            yield return curr;
+            curr += GRAPH_RESOLUTION;
+        }
+    }
 
     protected async override Task OnInitializedAsync()
     {
         string[] colors = ColorUtility.CategoricalTwelveColors;
 
-        List<string> labels = Enumerable.Range(start: 0, count: 100).Select(num => num).Select(val => val.ToString()).ToList();
+        List<string> labels = MakeBaseGraph().Select(num => num).Select(val => val.ToString()).ToList();
         List<IChartDataset> datasets = new();
 
         LineChartDataset dataset1 = new()
         {
             Label = "Fan Speed (%)",
-            Data = Enumerable.Range(start: 0, count: 100).Select(num => num).Select(i => calculator.CalculateFanSpeed(i)).Select(val => (double?)val).ToList(),
+            Data = MakeBaseGraph().Select(i => calculator.CalculateFanSpeed(i)).Select(val => (double?)val).ToList(),
             BackgroundColor = colors[0],
             BorderColor = colors[0],
             BorderWidth = 2,
@@ -56,7 +73,22 @@
             LineChartDataset dataset2 = new()
             {
                 Label = "Current Temperature",
-                Data = Enumerable.Range(start: 0, count: 100).Select(_ => (double?)latestAggregate).ToList(),
+                Data = MakeBaseGraph().Select<decimal, double?>(
+                    refVal =>
+                    {
+                        if (Math.Abs(refVal - latestAggregate.Value) > GRAPH_RESOLUTION)
+                        {
+                            return null;
+                        }
+
+                        if (refVal < latestAggregate.Value)
+                        {
+                            return (double)GRAPH_Y_START;
+                        }
+
+                        return (double)GRAPH_Y_END;
+                    }
+                ).ToList(),
                 BackgroundColor = colors[2],
                 BorderColor = colors[2],
                 BorderWidth = 2,
@@ -72,7 +104,7 @@
         lineChartOptions = new();
         lineChartOptions.Responsive = true;
         lineChartOptions.Interaction = new() { Mode = InteractionMode.Index, };
-        
+
         lineChartOptions.Scales.X!.Title = new() { Text = "Temperature", Display = true, };
         lineChartOptions.Scales.Y!.Title = new() { Text = "Fan Speed (%)", Display = true, };
 

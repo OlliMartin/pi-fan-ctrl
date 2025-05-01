@@ -60,7 +60,6 @@ public class UnifiTemperatureSensor : ITemperatureSensor
         (tuple) => new TemperatureReading()
         {
           Source = $"unifi-{tuple.Device.FriendlyName}{tuple.Triple.Suffix}",
-          // TODO: This function is wrong; Figure out how to retrieve data.
           Value = tuple.Triple.Value,
         }
       );
