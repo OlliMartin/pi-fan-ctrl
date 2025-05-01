@@ -7,7 +7,7 @@ public class FanSpeedCalculator
   private int minSpeed = 30;
 
   private int offThreshold = 20;
-  private int panicFrom = 55;
+  private int panicFrom = 85;
   private decimal multiplier = 0.9m;
 
   private Func<double, double> _logarithmic;
