@@ -22,7 +22,7 @@ public class SystemInfoWorker : IHostedService
   private I2cDevice? _i2cDevice;
   private Ssd1306? _device;
 
-  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 200));
+  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 100));
   private CancellationTokenSource? _cts;
 
   public SystemInfoWorker(ILogger<SystemInfoWorker> logger)
@@ -71,24 +71,47 @@ public class SystemInfoWorker : IHostedService
     return _device;
   }
 
+  private int y = 0;
+
   private async Task RunTimerAsync(CancellationToken cancelToken = default)
   {
     try
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
+        // using BitmapImage image = BitmapImage.CreateBitmap(
+        //   width: 128,
+        //   height: 32,
+        //   PixelFormat.Format32bppArgb
+        // );
+        //
+        // IGraphics g = image.GetDrawingApi();
+        //
+        // g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss zz"), font, fontSize, Color.White, new(x: 0, y: 0));
+        //
+        // Ssd1306 device = GetOrRenewDevice();
+        // device.DrawBitmap(image);
+
+        Ssd1306 device = GetOrRenewDevice();
+
         using BitmapImage image = BitmapImage.CreateBitmap(
           width: 128,
           height: 32,
           PixelFormat.Format32bppArgb
         );
 
+        image.Clear(Color.Black);
         IGraphics g = image.GetDrawingApi();
+        g.DrawText(DateTime.Now.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y));
 
-        g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss zz"), font, fontSize, Color.White, new(x: 0, y: 0));
-
-        Ssd1306 device = GetOrRenewDevice();
         device.DrawBitmap(image);
+
+        y++;
+
+        if (y >= image.Height)
+        {
+          y = 0;
+        }
       }
     }
     catch (OperationCanceledException)
