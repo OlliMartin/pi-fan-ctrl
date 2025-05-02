@@ -19,7 +19,7 @@ int fontSize = 25;
 string font = "DejaVu Sans";
 
 while (!Console.KeyAvailable)
-  using (BitmapImage image = BitmapImage.CreateBitmap(width: 128, height: 32, PixelFormat.Format1bppBw))
+  using (BitmapImage image = BitmapImage.CreateBitmap(width: 128, height: 32, PixelFormat.Format32bppArgb))
   {
     int y = 0;
     image.Clear(Color.Black);
