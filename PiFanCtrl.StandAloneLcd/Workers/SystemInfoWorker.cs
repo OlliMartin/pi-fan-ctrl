@@ -4,6 +4,7 @@ using System.Drawing;
 using Iot.Device.Graphics;
 using Iot.Device.Graphics.SkiaSharpAdapter;
 using Iot.Device.Ssd13xx;
+using Iot.Device.Ssd13xx.Commands;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +12,7 @@ namespace PiFanCtrl.StandAloneLcd.Workers;
 
 public class SystemInfoWorker : IHostedService
 {
-  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(seconds: 10);
+  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(seconds: 15);
   private DateTime _lastRenew;
 
   private const int fontSize = 25;
@@ -87,6 +88,8 @@ public class SystemInfoWorker : IHostedService
 
         Ssd1306 device = GetOrRenewDevice();
         device.DrawBitmap(image);
+        device.EnableDisplay(enabled: true);
+        device.SendCommand(new SetDisplayOn());
       }
     }
     catch (OperationCanceledException)
