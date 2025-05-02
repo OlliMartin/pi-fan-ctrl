@@ -34,7 +34,7 @@ public class SystemInfoWorker : IHostedService
   public Task StartAsync(CancellationToken cancellationToken)
   {
     Stopwatch swStart = Stopwatch.StartNew();
-    _logger.LogInformation("Starting fan rpm worker.");
+    _logger.LogInformation("Starting sys info worker.");
 
     _cts = new();
     _ = Task.Run(() => RunTimerAsync(_cts.Token), cancellationToken);
