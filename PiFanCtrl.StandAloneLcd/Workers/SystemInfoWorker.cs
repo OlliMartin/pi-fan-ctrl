@@ -14,7 +14,7 @@ public class SystemInfoWorker : IHostedService
   private static TimeSpan _renewAfter = TimeSpan.FromSeconds(seconds: 10);
   private DateTime _lastRenew;
 
-  private const int fontSize = 25;
+  private const int fontSize = 12;
   private const string font = "DejaVu Sans";
 
   private readonly ILogger<SystemInfoWorker> _logger;
