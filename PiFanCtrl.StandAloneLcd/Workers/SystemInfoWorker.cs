@@ -11,13 +11,16 @@ namespace PiFanCtrl.StandAloneLcd.Workers;
 
 public class SystemInfoWorker : IHostedService
 {
+  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(seconds: 10);
+  private DateTime _lastRenew;
+
   private const int fontSize = 25;
   private const string font = "DejaVu Sans";
 
   private readonly ILogger<SystemInfoWorker> _logger;
 
-  private readonly I2cDevice? _i2cDevice;
-  private readonly Ssd1306? _device;
+  private I2cDevice? _i2cDevice;
+  private Ssd1306? _device;
 
   private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 200));
   private CancellationTokenSource? _cts;
@@ -46,30 +49,45 @@ public class SystemInfoWorker : IHostedService
 
   private int i = 0;
 
+  private Ssd1306 GetOrRenewDevice()
+  {
+    if (_device is null || _lastRenew + _renewAfter > DateTime.UtcNow)
+    {
+      _logger.LogDebug("Creating or renewing device.");
+
+      I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
+      I2cDevice i2cDevice = I2cDevice.Create(connectionSettings);
+      Ssd1306 device = new(i2cDevice, width: 128, height: 32);
+
+      I2cDevice? oldI2c = Interlocked.Exchange(ref _i2cDevice, i2cDevice);
+      Ssd1306? oldDev = Interlocked.Exchange(ref _device, device);
+
+      oldI2c?.Dispose();
+      oldDev?.Dispose();
+
+      _lastRenew = DateTime.UtcNow;
+    }
+
+    return _device;
+  }
+
   private async Task RunTimerAsync(CancellationToken cancelToken = default)
   {
     try
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
-        I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
-        using I2cDevice i2cDevice = I2cDevice.Create(connectionSettings);
-        using Ssd1306 device = new(i2cDevice, width: 128, height: 32);
-
         using BitmapImage image = BitmapImage.CreateBitmap(
           width: 128,
           height: 32,
           PixelFormat.Format32bppArgb
         );
 
-        int y = 0;
-        // image.Clear(Color.Black);
-
         IGraphics g = image.GetDrawingApi();
 
-        g.DrawText("Static Text", font, fontSize, Color.White, new(x: 0, y));
+        g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss zz"), font, fontSize, Color.White, new(x: 0, y: 0));
 
-        device.EnableDisplay(enabled: true);
+        Ssd1306 device = GetOrRenewDevice();
         device.DrawBitmap(image);
       }
     }
