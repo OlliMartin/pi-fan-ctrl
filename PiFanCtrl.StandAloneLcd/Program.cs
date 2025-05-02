@@ -17,22 +17,18 @@ device.ClearScreen();
 Console.WriteLine("Display clock");
 int fontSize = 25;
 string font = "DejaVu Sans";
-int y = 0;
 
 while (!Console.KeyAvailable)
-  using (BitmapImage image = BitmapImage.CreateBitmap(width: 128, height: 32, PixelFormat.Format32bppArgb))
+  using (BitmapImage image = BitmapImage.CreateBitmap(width: 128, height: 32, PixelFormat.Format1bppBw))
   {
+    int y = 0;
     image.Clear(Color.Black);
+
     IGraphics g = image.GetDrawingApi();
+
     g.DrawText(DateTime.Now.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y));
+
     device.DrawBitmap(image);
-
-    y++;
-
-    if (y >= image.Height)
-    {
-      y = 0;
-    }
 
     Thread.Sleep(millisecondsTimeout: 100);
   }
