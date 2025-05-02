@@ -61,6 +61,7 @@ public class UnifiTemperatureSensor : ITemperatureSensor
         {
           Source = $"unifi-{tuple.Device.FriendlyName}{tuple.Triple.Suffix}",
           Value = tuple.Triple.Value,
+          Active = tuple.Device.Active,
         }
       );
     }

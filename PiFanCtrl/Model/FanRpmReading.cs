@@ -9,6 +9,8 @@ public record FanRpmReading : IReading
 
   public decimal Value { get; init; }
 
+  public bool Active => true;
+
   public DateTime AsOf { get; init; } = DateTime.UtcNow;
 
   public Dictionary<string, string> Metadata { get; } = new();

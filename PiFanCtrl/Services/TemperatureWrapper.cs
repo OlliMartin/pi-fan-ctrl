@@ -57,7 +57,9 @@ public class TemperatureWrapper(
     await readingStore.AddRangeAsync(readings, cancelToken);
 
     // TODO: Make configurable
-    decimal result = readings.Average(o => o.Value);
+    decimal result = readings
+      .Where(r => r.Active)
+      .Average(o => o.Value);
 
     return result;
   }

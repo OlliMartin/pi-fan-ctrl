@@ -5,6 +5,8 @@ public class UnifiDevice
   public string Name { get; init; }
 
   public string FriendlyName { get; init; }
+
+  public bool Active { get; init; } = true;
 }
 
 public class UnifiSensorsConfiguration : SensorConfiguration

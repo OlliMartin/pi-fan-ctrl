@@ -12,6 +12,8 @@ public record TemperatureReading : IReading
 
   public decimal Value { get; init; }
 
+  public bool Active { get; init; } = true;
+
   public DateTime AsOf { get; init; } = DateTime.UtcNow;
 
   public Dictionary<string, string> Metadata => new()

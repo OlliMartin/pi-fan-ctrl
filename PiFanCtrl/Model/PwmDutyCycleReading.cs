@@ -9,6 +9,8 @@ public class PwmDutyCycleReading : IReading
 
   public decimal Value { get; init; }
   public DateTime AsOf { get; init; } = DateTime.UtcNow;
+  
+  public bool Active => true;
 
   public Dictionary<string, string> Metadata { get; } = new();
 }

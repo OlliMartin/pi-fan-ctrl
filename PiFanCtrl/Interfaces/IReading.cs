@@ -10,5 +10,7 @@ public interface IReading
 
   public DateTime AsOf { get; init; }
 
+  public bool Active { get; }
+
   public Dictionary<string, string> Metadata { get; }
 }

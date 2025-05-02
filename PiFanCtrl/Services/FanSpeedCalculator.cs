@@ -1,4 +1,5 @@
 using MathNet.Numerics;
+using MathNet.Numerics.LinearRegression;
 
 namespace PiFanCtrl.Services;
 
