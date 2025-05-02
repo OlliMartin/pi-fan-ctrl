@@ -28,10 +28,6 @@ public class SystemInfoWorker : IHostedService
   public SystemInfoWorker(ILogger<SystemInfoWorker> logger)
   {
     _logger = logger;
-
-    I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
-    // _i2cDevice = I2cDevice.Create(connectionSettings);
-    // _device = new(_i2cDevice, width: 128, height: 32);
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -79,39 +75,18 @@ public class SystemInfoWorker : IHostedService
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
-        // using BitmapImage image = BitmapImage.CreateBitmap(
-        //   width: 128,
-        //   height: 32,
-        //   PixelFormat.Format32bppArgb
-        // );
-        //
-        // IGraphics g = image.GetDrawingApi();
-        //
-        // g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss zz"), font, fontSize, Color.White, new(x: 0, y: 0));
-        //
-        // Ssd1306 device = GetOrRenewDevice();
-        // device.DrawBitmap(image);
-
-        Ssd1306 device = GetOrRenewDevice();
-
         using BitmapImage image = BitmapImage.CreateBitmap(
           width: 128,
           height: 32,
           PixelFormat.Format32bppArgb
         );
 
-        image.Clear(Color.Black);
         IGraphics g = image.GetDrawingApi();
-        g.DrawText(DateTime.Now.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y));
 
+        g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y: 0));
+
+        Ssd1306 device = GetOrRenewDevice();
         device.DrawBitmap(image);
-
-        y++;
-
-        if (y >= image.Height)
-        {
-          y = 0;
-        }
       }
     }
     catch (OperationCanceledException)
