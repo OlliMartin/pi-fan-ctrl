@@ -44,6 +44,8 @@ public class SystemInfoWorker : IHostedService
     return Task.CompletedTask;
   }
 
+  private int i = 0;
+
   private async Task RunTimerAsync(CancellationToken cancelToken = default)
   {
     try
@@ -61,7 +63,7 @@ public class SystemInfoWorker : IHostedService
 
         IGraphics g = image.GetDrawingApi();
 
-        g.DrawText(DateTime.Now.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y));
+        g.DrawText("Static Text", font, fontSize, Color.White, new(x: 0, y));
 
         _device.EnableDisplay(enabled: true);
         _device.DrawBitmap(image);
