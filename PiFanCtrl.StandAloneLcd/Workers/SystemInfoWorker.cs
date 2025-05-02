@@ -63,6 +63,7 @@ public class SystemInfoWorker : IHostedService
 
         g.DrawText(DateTime.Now.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y));
 
+        _device.EnableDisplay(enabled: true);
         _device.DrawBitmap(image);
       }
     }
