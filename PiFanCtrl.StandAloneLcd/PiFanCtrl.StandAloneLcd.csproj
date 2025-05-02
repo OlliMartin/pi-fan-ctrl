@@ -10,6 +10,8 @@
     <ItemGroup>
         <PackageReference Include="Iot.Device.Bindings" Version="3.2.0"/>
         <PackageReference Include="Iot.Device.Bindings.SkiaSharpAdapter" Version="3.2.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.4"/>
         <PackageReference Include="System.Device.Gpio" Version="3.2.0"/>
     </ItemGroup>
 
