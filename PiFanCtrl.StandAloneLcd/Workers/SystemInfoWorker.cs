@@ -57,7 +57,7 @@ public class SystemInfoWorker : IHostedService
         );
 
         int y = 0;
-        image.Clear(Color.Black);
+        // image.Clear(Color.Black);
 
         IGraphics g = image.GetDrawingApi();
 
