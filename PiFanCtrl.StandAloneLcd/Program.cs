@@ -4,6 +4,8 @@ using Iot.Device.Graphics;
 using Iot.Device.Graphics.SkiaSharpAdapter;
 using Iot.Device.Ssd13xx;
 
+SkiaSharpAdapter.Register();
+
 Console.WriteLine("Using direct I2C protocol");
 
 I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
