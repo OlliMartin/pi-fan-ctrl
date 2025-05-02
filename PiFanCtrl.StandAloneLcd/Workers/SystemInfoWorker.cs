@@ -51,7 +51,7 @@ public class SystemInfoWorker : IHostedService
 
   private Ssd1306 GetOrRenewDevice()
   {
-    if (_device is null || _lastRenew + _renewAfter > DateTime.UtcNow)
+    if (_device is null || _lastRenew + _renewAfter < DateTime.UtcNow)
     {
       _logger.LogDebug("Creating or renewing device.");
 
