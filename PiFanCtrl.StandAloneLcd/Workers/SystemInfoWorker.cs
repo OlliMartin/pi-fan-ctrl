@@ -16,8 +16,8 @@ public class SystemInfoWorker : IHostedService
 
   private readonly ILogger<SystemInfoWorker> _logger;
 
-  private readonly I2cDevice _i2cDevice;
-  private readonly Ssd1306 _device;
+  private readonly I2cDevice? _i2cDevice;
+  private readonly Ssd1306? _device;
 
   private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 200));
   private CancellationTokenSource? _cts;
@@ -27,8 +27,8 @@ public class SystemInfoWorker : IHostedService
     _logger = logger;
 
     I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
-    _i2cDevice = I2cDevice.Create(connectionSettings);
-    _device = new(_i2cDevice, width: 128, height: 32);
+    // _i2cDevice = I2cDevice.Create(connectionSettings);
+    // _device = new(_i2cDevice, width: 128, height: 32);
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -52,6 +52,10 @@ public class SystemInfoWorker : IHostedService
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
+        I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
+        using I2cDevice i2cDevice = I2cDevice.Create(connectionSettings);
+        using Ssd1306 device = new(i2cDevice, width: 128, height: 32);
+
         using BitmapImage image = BitmapImage.CreateBitmap(
           width: 128,
           height: 32,
@@ -65,8 +69,8 @@ public class SystemInfoWorker : IHostedService
 
         g.DrawText("Static Text", font, fontSize, Color.White, new(x: 0, y));
 
-        _device.EnableDisplay(enabled: true);
-        _device.DrawBitmap(image);
+        device.EnableDisplay(enabled: true);
+        device.DrawBitmap(image);
       }
     }
     catch (OperationCanceledException)
@@ -90,8 +94,8 @@ public class SystemInfoWorker : IHostedService
       await (_cts?.CancelAsync() ?? Task.CompletedTask);
       _cts?.Dispose();
 
-      _device.Dispose();
-      _i2cDevice.Dispose();
+      _device?.Dispose();
+      _i2cDevice?.Dispose();
     }
     catch (Exception ex)
     {
