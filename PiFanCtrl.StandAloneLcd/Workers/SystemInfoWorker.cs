@@ -75,32 +75,35 @@ public class SystemInfoWorker : IHostedService
     try
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
-      {
-        using BitmapImage image = BitmapImage.CreateBitmap(
-          width: 128,
-          height: 32,
-          PixelFormat.Format32bppArgb
-        );
+        try
+        {
+          using BitmapImage image = BitmapImage.CreateBitmap(
+            width: 128,
+            height: 32,
+            PixelFormat.Format32bppArgb
+          );
 
-        IGraphics g = image.GetDrawingApi();
+          IGraphics g = image.GetDrawingApi();
 
-        g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y: 0));
+          g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y: 0));
 
-        Ssd1306 device = GetOrRenewDevice();
-        device.DrawBitmap(image);
-        device.EnableDisplay(enabled: true);
-        device.SendCommand(new SetDisplayOn());
-      }
+          Ssd1306 device = GetOrRenewDevice();
+          device.DrawBitmap(image);
+          device.EnableDisplay(enabled: true);
+          device.SendCommand(new SetDisplayOn());
+        }
+        catch (OperationCanceledException)
+        {
+          throw;
+        }
+        catch (Exception ex)
+        {
+          _logger.LogError(ex, "An error occurred during sys info processing.");
+        }
     }
     catch (OperationCanceledException)
     {
       _logger.LogInformation("Stopped.");
-    }
-    catch (Exception ex)
-    {
-      _logger.LogError(ex, "An error occurred during sys info processing.");
-      //
-      // throw;
     }
   }
 
