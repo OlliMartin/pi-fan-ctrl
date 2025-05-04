@@ -40,10 +40,10 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
     IGraphics g = image.GetDrawingApi();
     
     g.DrawText($"Temp:", font, fontSize, Color.White, new(x: 0, y: 0));
-    g.DrawText($"{systemInfo.MeasuredTemperature:F2}", font, fontSize, Color.White, new(x: 128 - 56, y: 0));
+    g.DrawText($"{systemInfo.MeasuredTemperature:F2}", font, fontSize, Color.White, new(x: 128 - 5*fontSize, y: 0));
     
     g.DrawText($"Fan%:", font, fontSize, Color.White, new(x: 0, y: 16));
-    g.DrawText($"{systemInfo.PwmPercentage:F2}", font, fontSize, Color.White, new(x: 128-56, y: 16));
+    g.DrawText($"{systemInfo.PwmPercentage:F2}", font, fontSize, Color.White, new(x: 128- 5*fontSize, y: 16));
 
     Ssd1306 device = GetOrRenewDevice();
     device.DrawBitmap(image);
