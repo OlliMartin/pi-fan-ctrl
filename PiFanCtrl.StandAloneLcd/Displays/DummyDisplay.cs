@@ -15,6 +15,8 @@ public class DummyDisplay : IDisplay
 
   public Task Draw(SystemInfo systemInfo, CancellationToken cancelToken = default)
   {
+    
+    
     _logger.LogInformation(
       "Received sys-info: Temp: {temp} | Pwm: {pwm} | Fan-Rpm: {fanRpm} | AsOf: {asOf}",
       systemInfo.MeasuredTemperature,

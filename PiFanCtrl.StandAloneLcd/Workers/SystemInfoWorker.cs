@@ -16,14 +16,20 @@ public class SystemInfoWorker : IHostedService
 {
   private readonly ILogger<SystemInfoWorker> _logger;
   private readonly IDisplay _display;
+  private readonly ISystemInfoService _systemInfoService;
 
   private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 2500));
   private CancellationTokenSource? _cts;
 
-  public SystemInfoWorker(ILogger<SystemInfoWorker> logger, IDisplay display)
+  public SystemInfoWorker(
+    ILogger<SystemInfoWorker> logger,
+    IDisplay display,
+    ISystemInfoService systemInfoService
+  )
   {
     _logger = logger;
     _display = display;
+    _systemInfoService = systemInfoService;
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -45,7 +51,7 @@ public class SystemInfoWorker : IHostedService
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
       {
-        SystemInfo sysInfo = new();
+        SystemInfo sysInfo = await _systemInfoService.GetSystemInfoAsync(cancelToken);
         await _display.Draw(sysInfo, cancelToken);
       }
     }

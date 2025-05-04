@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PiFanCtrl.StandAloneLcd.Displays;
 using PiFanCtrl.StandAloneLcd.Interfaces;
+using PiFanCtrl.StandAloneLcd.Services;
 using PiFanCtrl.StandAloneLcd.Workers;
 
 SkiaSharpAdapter.Register();
@@ -25,6 +26,11 @@ hostBuilder.ConfigureServices(
   (ctx, sc) =>
   {
     sc.AddHostedService<SystemInfoWorker>();
+    sc.AddSingleton<ISystemInfoService, CalloutSystemInfoService>();
+
+    sc.AddHttpClient<CalloutSystemInfoService>(
+      (client) => { client.BaseAddress = new("https://utils.acaad.dev"); }
+    );
 
     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {

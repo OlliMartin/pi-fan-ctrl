@@ -38,7 +38,8 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
 
     IGraphics g = image.GetDrawingApi();
 
-    g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y: 0));
+    g.DrawText($"Temp: {systemInfo.MeasuredTemperature}", font, fontSize, Color.White, new(x: 0, y: 0));
+    g.DrawText($"Fan%: {systemInfo.PwmPercentage}", font, fontSize, Color.White, new(x: 0, y: 16));
 
     Ssd1306 device = GetOrRenewDevice();
     device.DrawBitmap(image);
