@@ -18,7 +18,7 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
   private DateTime _lastRenew;
 
   private const int fontSize = 14;
-  private const string font = "DejaVu Sans";
+  private const string font = "DejaVu Mono";
   
   private I2cDevice? _i2cDevice;
   private Ssd1306? _device;
