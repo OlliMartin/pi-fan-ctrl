@@ -12,7 +12,9 @@ namespace PiFanCtrl.StandAloneLcd.Workers;
 
 public class SystemInfoWorker : IHostedService
 {
-  private static TimeSpan _renewAfter = TimeSpan.FromMinutes(minutes: 5);
+  private const int REFRESH_INTERVAL_IN_S = 10;
+
+  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(REFRESH_INTERVAL_IN_S);
   private DateTime _lastRenew;
 
   private const int fontSize = 25;
