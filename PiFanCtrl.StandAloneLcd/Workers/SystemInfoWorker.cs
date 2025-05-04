@@ -91,6 +91,8 @@ public class SystemInfoWorker : IHostedService
           device.DrawBitmap(image);
           device.EnableDisplay(enabled: true);
           device.SendCommand(new SetDisplayOn());
+
+          _logger.LogDebug("Wrote to lcd.");
         }
         catch (OperationCanceledException)
         {
