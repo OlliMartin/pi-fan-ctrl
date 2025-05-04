@@ -7,30 +7,23 @@ using Iot.Device.Ssd13xx;
 using Iot.Device.Ssd13xx.Commands;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PiFanControl.Abstractions;
+using PiFanCtrl.StandAloneLcd.Interfaces;
 
 namespace PiFanCtrl.StandAloneLcd.Workers;
 
 public class SystemInfoWorker : IHostedService
 {
-  private const int REFRESH_INTERVAL_IN_S = 10;
-
-  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(REFRESH_INTERVAL_IN_S);
-  private DateTime _lastRenew;
-
-  private const int fontSize = 25;
-  private const string font = "DejaVu Sans";
-
   private readonly ILogger<SystemInfoWorker> _logger;
+  private readonly IDisplay _display;
 
-  private I2cDevice? _i2cDevice;
-  private Ssd1306? _device;
-
-  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 200));
+  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 2500));
   private CancellationTokenSource? _cts;
 
-  public SystemInfoWorker(ILogger<SystemInfoWorker> logger)
+  public SystemInfoWorker(ILogger<SystemInfoWorker> logger, IDisplay display)
   {
     _logger = logger;
+    _display = display;
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -46,60 +39,15 @@ public class SystemInfoWorker : IHostedService
     return Task.CompletedTask;
   }
 
-  private int i = 0;
-
-  private Ssd1306 GetOrRenewDevice()
-  {
-    if (_device is null || _lastRenew + _renewAfter < DateTime.UtcNow)
-    {
-      _logger.LogDebug("Creating or renewing device.");
-
-      I2cConnectionSettings connectionSettings = new(busId: 1, deviceAddress: 0x3C);
-      I2cDevice i2cDevice = I2cDevice.Create(connectionSettings);
-      Ssd1306 device = new(i2cDevice, width: 128, height: 32);
-
-      I2cDevice? oldI2c = Interlocked.Exchange(ref _i2cDevice, i2cDevice);
-      Ssd1306? oldDev = Interlocked.Exchange(ref _device, device);
-
-      oldI2c?.Dispose();
-      oldDev?.Dispose();
-
-      _lastRenew = DateTime.UtcNow;
-    }
-
-    return _device;
-  }
-
-  private int y = 0;
-
   private async Task RunTimerAsync(CancellationToken cancelToken = default)
   {
     try
     {
       while (await _timer.WaitForNextTickAsync(cancelToken))
-        try
-        {
-          using BitmapImage image = BitmapImage.CreateBitmap(
-            width: 128,
-            height: 32,
-            PixelFormat.Format32bppArgb
-          );
-
-          IGraphics g = image.GetDrawingApi();
-
-          g.DrawText(DateTime.UtcNow.ToString("HH:mm:ss"), font, fontSize, Color.White, new(x: 0, y: 0));
-
-          Ssd1306 device = GetOrRenewDevice();
-          device.DrawBitmap(image);
-        }
-        catch (OperationCanceledException)
-        {
-          throw;
-        }
-        catch (Exception ex)
-        {
-          _logger.LogError(ex, "An error occurred during sys info processing.");
-        }
+      {
+        SystemInfo sysInfo = new();
+        await _display.Draw(sysInfo, cancelToken);
+      }
     }
     catch (OperationCanceledException)
     {
@@ -115,9 +63,6 @@ public class SystemInfoWorker : IHostedService
     {
       await (_cts?.CancelAsync() ?? Task.CompletedTask);
       _cts?.Dispose();
-
-      _device?.Dispose();
-      _i2cDevice?.Dispose();
     }
     catch (Exception ex)
     {

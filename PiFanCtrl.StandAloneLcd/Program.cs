@@ -1,7 +1,10 @@
-﻿using Iot.Device.Graphics.SkiaSharpAdapter;
+﻿using System.Runtime.InteropServices;
+using Iot.Device.Graphics.SkiaSharpAdapter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PiFanCtrl.StandAloneLcd.Displays;
+using PiFanCtrl.StandAloneLcd.Interfaces;
 using PiFanCtrl.StandAloneLcd.Workers;
 
 SkiaSharpAdapter.Register();
@@ -19,8 +22,21 @@ hostBuilder.ConfigureLogging(
 );
 
 hostBuilder.ConfigureServices(
-  (ctx, sc) => { sc.AddHostedService<SystemInfoWorker>(); }
+  (ctx, sc) =>
+  {
+    sc.AddHostedService<SystemInfoWorker>();
+
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    {
+      sc.AddSingleton<IDisplay, DummyDisplay>();
+    }
+    else
+    {
+      sc.AddSingleton<IDisplay, Ssd1306Display>();
+    }
+  }
 );
+
 
 IHost host = hostBuilder.Build();
 host.Run();

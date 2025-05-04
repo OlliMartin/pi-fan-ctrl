@@ -82,7 +82,8 @@ builder.Services
         .Single(ts => ts is DummyTemperatureSensor) as DummyTemperatureSensor)!
   )
   .AddKeyedSingleton<ITemperatureSensor, TemperatureWrapper>("delegating")
-  .AddSingleton<PwmControllerWrapper>();
+  .AddSingleton<PwmControllerWrapper>()
+  .AddSingleton<SystemInfoProvider>();
 
 if (influxConfiguration.Exists())
 {
@@ -112,6 +113,8 @@ builder.Services.AddHostedService<FanRpmWorker>();
 
 SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
 
+builder.Services.AddControllers();
+
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -127,7 +130,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-
+app.MapControllers();
 app.MapRazorComponents<App>()
   .AddInteractiveServerRenderMode();
 
