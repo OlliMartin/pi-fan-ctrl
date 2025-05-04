@@ -12,7 +12,7 @@ namespace PiFanCtrl.StandAloneLcd.Workers;
 
 public class SystemInfoWorker : IHostedService
 {
-  private static TimeSpan _renewAfter = TimeSpan.FromSeconds(seconds: 15);
+  private static TimeSpan _renewAfter = TimeSpan.FromMinutes(minutes: 5);
   private DateTime _lastRenew;
 
   private const int fontSize = 25;
@@ -23,7 +23,7 @@ public class SystemInfoWorker : IHostedService
   private I2cDevice? _i2cDevice;
   private Ssd1306? _device;
 
-  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 100));
+  private readonly PeriodicTimer _timer = new(TimeSpan.FromMilliseconds(milliseconds: 200));
   private CancellationTokenSource? _cts;
 
   public SystemInfoWorker(ILogger<SystemInfoWorker> logger)
@@ -89,10 +89,6 @@ public class SystemInfoWorker : IHostedService
 
           Ssd1306 device = GetOrRenewDevice();
           device.DrawBitmap(image);
-          device.EnableDisplay(enabled: true);
-          device.SendCommand(new SetDisplayOn());
-
-          _logger.LogDebug("Wrote to lcd.");
         }
         catch (OperationCanceledException)
         {
