@@ -6,6 +6,7 @@ using Iot.Device.Ssd13xx;
 using Microsoft.Extensions.Logging;
 using PiFanControl.Abstractions;
 using PiFanCtrl.StandAloneLcd.Interfaces;
+using SkiaSharp;
 
 namespace PiFanCtrl.StandAloneLcd.Displays;
 
@@ -38,6 +39,9 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
 
     IGraphics g = image.GetDrawingApi();
 
+    var test = SKTypeface.FromFamilyName(font);
+    Console.WriteLine("Font: " + test?.TableCount);
+    
     g.DrawText($"Temp: {systemInfo.MeasuredTemperature:F2}", font, fontSize, Color.White, new(x: 0, y: 0));
     g.DrawText($"Fan%: {systemInfo.PwmPercentage:F2}", font, fontSize, Color.White, new(x: 0, y: 16));
 
