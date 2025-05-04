@@ -99,8 +99,8 @@ public class SystemInfoWorker : IHostedService
     catch (Exception ex)
     {
       _logger.LogError(ex, "An error occurred during sys info processing.");
-
-      throw;
+      //
+      // throw;
     }
   }
 
