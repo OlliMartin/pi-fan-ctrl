@@ -21,7 +21,7 @@ hostBuilder.ConfigureLogging(
   {
     opts.SetMinimumLevel(LogLevel.Trace);
 
-#if !DEBUG
+#if DEBUG
     opts.AddConsole();
 #else
     opts.AddOpenTelemetry(
