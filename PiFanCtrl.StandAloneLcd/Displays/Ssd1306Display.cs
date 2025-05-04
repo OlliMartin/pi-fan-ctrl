@@ -13,7 +13,7 @@ namespace PiFanCtrl.StandAloneLcd.Displays;
 public sealed class Ssd1306Display : IDisplay, IDisposable
 {
   private readonly ILogger<Ssd1306Display> _logger;
-  private const int REFRESH_INTERVAL_IN_S = 10;
+  private const int REFRESH_INTERVAL_IN_S = 300;
 
   private static TimeSpan _renewAfter = TimeSpan.FromSeconds(REFRESH_INTERVAL_IN_S);
   private DateTime _lastRenew;
