@@ -3,6 +3,8 @@ using Iot.Device.Graphics.SkiaSharpAdapter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
 using PiFanCtrl.StandAloneLcd.Displays;
 using PiFanCtrl.StandAloneLcd.Interfaces;
 using PiFanCtrl.StandAloneLcd.Services;
@@ -19,7 +21,7 @@ hostBuilder.ConfigureLogging(
   {
     opts.SetMinimumLevel(LogLevel.Trace);
 
-#if DEBUG
+#if !DEBUG
     opts.AddConsole();
 #else
     opts.AddOpenTelemetry(
