@@ -24,11 +24,13 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
   private I2cDevice? _i2cDevice;
   private Ssd1306? _device;
 
+  private bool printAggregateTemp = true;
+
   public Ssd1306Display(ILogger<Ssd1306Display> logger)
   {
     _logger = logger;
   }
-
+  
   public Task Draw(SystemInfo systemInfo, CancellationToken cancelToken = default)
   {
     using BitmapImage image = BitmapImage.CreateBitmap(
@@ -38,9 +40,19 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
     );
 
     IGraphics g = image.GetDrawingApi();
-    
-    g.DrawText($"Temp:", font, fontSize, Color.White, new(x: 0, y: 0));
-    g.DrawText($"{systemInfo.MeasuredTemperature:F2}", font, fontSize, Color.White, new(x: 128 - 5*fontSize, y: 0));
+
+    printAggregateTemp = !printAggregateTemp;
+
+    if (printAggregateTemp)
+    {
+      g.DrawText($"A-Temp:", font, fontSize, Color.White, new(x: 0, y: 0));
+      g.DrawText($"{systemInfo.AggregatedTemperature:F2}", font, fontSize, Color.White, new(x: 128 - 5*fontSize, y: 0));
+    }
+    else
+    {
+      g.DrawText($"M-Temp:", font, fontSize, Color.White, new(x: 0, y: 0));
+      g.DrawText($"{systemInfo.MeasuredTemperature:F2}", font, fontSize, Color.White, new(x: 128 - 5*fontSize, y: 0));
+    }
     
     g.DrawText($"Fan%:", font, fontSize, Color.White, new(x: 0, y: 16));
     g.DrawText($"{systemInfo.PwmPercentage:F2}", font, fontSize, Color.White, new(x: 128- 5*fontSize, y: 16));
