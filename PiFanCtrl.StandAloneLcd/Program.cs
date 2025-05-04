@@ -18,7 +18,31 @@ hostBuilder.ConfigureLogging(
   opts =>
   {
     opts.SetMinimumLevel(LogLevel.Trace);
+
+#if DEBUG
     opts.AddConsole();
+#else
+    opts.AddOpenTelemetry(
+      otelOptions =>
+      {
+        ResourceBuilder resourceBuilder =
+          ResourceBuilder.CreateDefault().AddService(
+              "ldc-control",
+              "acaad.dev",
+              serviceInstanceId: System.Net.Dns.GetHostName()
+            )
+            .AddEnvironmentVariableDetector();
+
+        otelOptions.SetResourceBuilder(resourceBuilder);
+
+        otelOptions.IncludeScopes = true;
+        otelOptions.IncludeFormattedMessage = true;
+        otelOptions.ParseStateValues = true;
+
+        otelOptions.AddOtlpExporter();
+      }
+    );
+#endif
   }
 );
 
@@ -45,4 +69,5 @@ hostBuilder.ConfigureServices(
 
 
 IHost host = hostBuilder.Build();
+
 host.Run();
