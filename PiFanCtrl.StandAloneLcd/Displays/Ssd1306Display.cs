@@ -17,7 +17,7 @@ public sealed class Ssd1306Display : IDisplay, IDisposable
   private static TimeSpan _renewAfter = TimeSpan.FromSeconds(REFRESH_INTERVAL_IN_S);
   private DateTime _lastRenew;
 
-  private const int fontSize = 25;
+  private const int fontSize = 14;
   private const string font = "DejaVu Sans";
   
   private I2cDevice? _i2cDevice;
