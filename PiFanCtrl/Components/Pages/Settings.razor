@@ -1,0 +1,167 @@
+@page "/settings"
+@using PiFanCtrl.Components.Components
+@using PiFanCtrl.Model
+@using PiFanCtrl.Services
+@rendermode InteractiveServer
+@inject FanSpeedCalculator calculator
+
+<PageTitle>Settings</PageTitle>
+
+<h1>Settings</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <PiFanCtrl.Components.Components.TemperatureVsFanSpeedGraph @ref="_graph"/>
+    </div>
+
+    <div class="col-md-4">
+        @if (_fanSettings is null)
+        {
+            <p>
+                <em>Loading...</em>
+            </p>
+        }
+        else
+        {
+            <EditForm Model="_fanSettings" OnValidSubmit="SubmitAsync" FormName="Simulation">
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+
+                <div class="form-group row mb-3">
+                    <div class="col-md-6">
+                        <div class="row">
+                            <label class="col-md-6 col-form-label">Min Temp: <span class="text-danger">*</span></label>
+                            <InputNumber class="col-md-6" @bind-Value="_fanSettings!.MinimumSpeedTemperature" min="0"
+                                         max="75"/>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="row">
+                            <label class="col-md-6 col-form-label">Min Speed: <span class="text-danger">*</span></label>
+                            <InputNumber class="col-md-6" @bind-Value="_fanSettings!.MinimumSpeed" min="0" max="100"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group row mb-3">
+                    <div class="col-md-6">
+                        <div class="row">
+                            <label class="col-md-6 col-form-label">Panic Temp: <span
+                                    class="text-danger">*</span></label>
+                            <InputNumber class="col-md-6" @bind-Value="_fanSettings!.PanicFromTemperature" min="50"
+                                         max="120"/>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="row">
+                            <label class="col-md-6 col-form-label">Panic Speed: <span
+                                    class="text-danger">*</span></label>
+                            <InputNumber class="col-md-6" @bind-Value="_fanSettings!.PanicSpeed" min="0" max="100"/>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Active</th>
+                        <th>Temperature</th>
+                        <th>Fan Percentage</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (CurvePoint point in _fanSettings!.CurvePoints ?? [])
+                    {
+                        <tr>
+                            <td>
+                                <CheckboxInput @bind-Value="@point.Active" @onclick="SubmitAsync"/>
+                            </td>
+                            <td>@point.Temperature</td>
+                            <td>@point.FanPercentage</td>
+                            <td>
+                                <button type="button" @onclick="() => OnDeletePointClick(point)">Rem</button>
+                            </td>
+                        </tr>
+                    }
+
+                    <tr>
+                        <td/>
+                        <td>
+                            <InputNumber class="col-md-6" @bind-Value="@PointToAdd.Temperature"
+                                         min="@_fanSettings.MinimumSpeedTemperature"
+                                         max="@_fanSettings.PanicFromTemperature"/>
+                        </td>
+                        <td>
+                            <InputNumber class="col-md-6" @bind-Value="@PointToAdd.FanPercentage"
+                                         min="@_fanSettings.MinimumSpeed" max="@_fanSettings.PanicSpeed"/>
+                        </td>
+                        <td>
+                            <button type="button" @onclick="OnAddPointClick">Add</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="row">
+                    <div class="col-md-12 text-right">
+                        <button type="submit">Submit</button>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private FanSettings? _fanSettings;
+    private TemperatureVsFanSpeedGraph _graph;
+
+    private CurvePointUi PointToAdd { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _fanSettings = calculator.FanSettings;
+    }
+
+    public async Task OnAddPointClick()
+    {
+        if (_fanSettings is null)
+        {
+            return;
+        }
+
+        FanSettings clone = _fanSettings.AddPoint(PointToAdd.ToPoint());
+        _fanSettings = clone;
+        PointToAdd = new();
+
+        await SubmitAsync();
+    }
+
+    public async Task OnDeletePointClick(CurvePoint point)
+    {
+        if (_fanSettings is null)
+        {
+            return;
+        }
+
+        _fanSettings = _fanSettings.RemovePoint(point);
+        await SubmitAsync();
+    }
+
+    public async Task SubmitAsync()
+    {
+        if (_fanSettings is null)
+        {
+            return;
+        }
+
+        calculator.UpdateFanSettings(_fanSettings);
+
+        await _graph.RefreshGraphAsync();
+    }
+
+}

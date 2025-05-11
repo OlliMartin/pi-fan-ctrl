@@ -17,7 +17,8 @@ builder.Services.AddSystemd();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-  .AddInteractiveServerComponents();
+  .AddInteractiveServerComponents()
+  .AddCircuitOptions(options => { options.DetailedErrors = true; });
 
 builder.Services.AddBlazorBootstrap();
 
@@ -131,6 +132,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapControllers();
+
 app.MapRazorComponents<App>()
   .AddInteractiveServerRenderMode();
 

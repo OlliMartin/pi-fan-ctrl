@@ -1,39 +1,61 @@
+using System.Diagnostics.CodeAnalysis;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearRegression;
+using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Services;
 
 public class FanSpeedCalculator
 {
-  private int minSpeed = 30;
+  private Func<double, double> _curveGenerator;
 
-  private int offThreshold = 20;
-  private int panicFrom = 85;
-  private decimal multiplier = 0.9m;
+  private FanSettings _fanSettings;
 
-  private Func<double, double> _logarithmic;
+  public FanSettings FanSettings => _fanSettings with { };
 
   public FanSpeedCalculator()
   {
-    double[] xdata = new double[] { offThreshold, panicFrom, };
-    double[] ydata = new double[] { 0, 100, };
+    _fanSettings = new()
+    {
+      MinimumSpeedTemperature = 30,
+      MinimumSpeed = 15,
+      PanicFromTemperature = 120,
+      PanicSpeed = 100,
+      CurvePoints =
+      [
+      ],
+    };
 
-    _logarithmic = Fit.LogarithmFunc(xdata, ydata);
+    ConstructCurveGenerator();
   }
 
-  private decimal ClampToPercentage(decimal val) => Math.Clamp(val, minSpeed, max: 100);
+  [MemberNotNull(nameof(_curveGenerator))]
+  private void ConstructCurveGenerator()
+  {
+    List<CurvePoint> activePoints = _fanSettings.CurvePoints.Where(cp => cp.Active).ToList();
 
-  public decimal CalculateFanSpeed(decimal temperature) =>
-    // if (temperature < offThreshold)
-    // {
-    //   return 0;
-    // }
-    //
-    // if (temperature >= panicFrom)
-    // {
-    //   return 100;
-    // }
-    //
-    // return Math.Min(val1: 100, temperature * multiplier);
-    ClampToPercentage((decimal)_logarithmic((double)temperature));
+    List<double> xData = [(double)_fanSettings.MinimumSpeedTemperature,];
+    xData.AddRange(activePoints.Select(cp => (double)cp.Temperature));
+    xData.Add((double)_fanSettings.PanicFromTemperature);
+
+    List<double> yData = [(double)_fanSettings.MinimumSpeed,];
+    yData.AddRange(activePoints.Select(cp => (double)cp.FanPercentage));
+    yData.Add((double)_fanSettings.PanicSpeed);
+
+    _curveGenerator = Fit.LogarithmFunc(xData.ToArray(), yData.ToArray());
+  }
+
+  private decimal ClampToPercentage(decimal val) => Math.Clamp(val, _fanSettings.MinimumSpeed, max: 100m);
+
+  public decimal CalculateFanSpeed(decimal temperature)
+  {
+    decimal fromCurve = (decimal)_curveGenerator((double)temperature);
+    return ClampToPercentage(fromCurve);
+  }
+
+  public void UpdateFanSettings(FanSettings fanSettings)
+  {
+    _fanSettings = fanSettings;
+    ConstructCurveGenerator();
+  }
 }
