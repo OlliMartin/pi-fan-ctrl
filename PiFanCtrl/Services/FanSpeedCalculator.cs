@@ -17,12 +17,18 @@ public class FanSpeedCalculator
   {
     _fanSettings = new()
     {
-      MinimumSpeedTemperature = 20,
+      MinimumSpeedTemperature = 25,
       MinimumSpeed = 40,
       PanicFromTemperature = 55,
       PanicSpeed = 100,
       CurvePoints =
       [
+        new()
+        {
+          Active = true,
+          Temperature = 40,
+          FanPercentage = 80,
+        },
       ],
     };
 
