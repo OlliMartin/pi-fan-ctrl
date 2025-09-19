@@ -17,9 +17,9 @@ public class FanSpeedCalculator
   {
     _fanSettings = new()
     {
-      MinimumSpeedTemperature = 30,
-      MinimumSpeed = 15,
-      PanicFromTemperature = 120,
+      MinimumSpeedTemperature = 20,
+      MinimumSpeed = 40,
+      PanicFromTemperature = 55,
       PanicSpeed = 100,
       CurvePoints =
       [
