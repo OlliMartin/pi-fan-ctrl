@@ -86,7 +86,7 @@ builder.Services
   .AddSingleton<PwmControllerWrapper>()
   .AddSingleton<SystemInfoProvider>();
 
-if (influxConfiguration.Exists())
+if (influxConfiguration.Exists() && Environment.GetEnvironmentVariable("NO_INFLUX") is null)
 {
   builder.Services.AddSingleton<IReadingStore, InfluxReadingStore>();
 }
