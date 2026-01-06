@@ -29,8 +29,21 @@ public sealed class GpioPwmController : IPwmController, IDisposable
       config.Channel
     );
 
-    _pwmChannel = PwmChannel.Create(config.ChipIndex, config.Channel, FAN_PWM_FREQUENCY, DEFAULT_DUTY_CYCLE);
-    _pwmChannel.Start();
+    try
+    {
+      _pwmChannel = PwmChannel.Create(
+        config.ChipIndex,
+        config.Channel,
+        FAN_PWM_FREQUENCY,
+        DEFAULT_DUTY_CYCLE
+      );
+
+      _pwmChannel.Start();
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Failed to start PWM controller.");
+    }
   }
 
   public Task SetDutyCycleAsync(decimal percentage, CancellationToken cancelToken = default)
