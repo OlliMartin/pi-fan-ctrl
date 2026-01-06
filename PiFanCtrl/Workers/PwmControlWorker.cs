@@ -14,7 +14,13 @@ public class PwmControlWorker(
   ILogger<PwmControlWorker> logger
 ) : IHostedService
 {
-  private const decimal DEFAULT_DUTY_CYCLE = 100;
+  private static readonly decimal DEFAULT_DUTY_CYCLE = decimal.TryParse(
+    Environment.GetEnvironmentVariable("DEFAULT_DUTY_CYCLE"),
+    out decimal result
+  )
+    ? result
+    : 1;
+
   private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(seconds: 5));
 
   private CancellationTokenSource? _cts;
