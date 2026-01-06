@@ -100,7 +100,8 @@ else
   builder.Services.AddSingleton<IPwmController, GpioPwmController>();
 }
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || Environment.GetEnvironmentVariable("NO_FAN_RPM") is not null)
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+    Environment.GetEnvironmentVariable("NO_FAN_RPM") is not null)
 {
   builder.Services.AddSingleton<IFanRpmSensor, DummyFanRpmSensor>();
 }
@@ -112,7 +113,10 @@ else
 builder.Services.AddHostedService<PwmControlWorker>();
 builder.Services.AddHostedService<FanRpmWorker>();
 
-SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
+if (Environment.GetEnvironmentVariable("NO_SENSORS") is null)
+{
+  SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
+}
 
 builder.Services.AddControllers();
 
