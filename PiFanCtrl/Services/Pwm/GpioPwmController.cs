@@ -9,7 +9,10 @@ namespace PiFanCtrl.Services.Pwm;
 public sealed class GpioPwmController : IPwmController, IDisposable
 {
   private const int FAN_PWM_FREQUENCY = 25_000;
-  private const double DEFAULT_DUTY_CYCLE = 1;
+
+  private static readonly double DEFAULT_DUTY_CYCLE = double.TryParse(Environment.GetEnvironmentVariable("DEFAULT_PWM"), out double result)
+      ? result
+      : 1;
 
   private readonly ILogger _logger;
   private readonly PwmChannel _pwmChannel;
