@@ -100,7 +100,7 @@ else
   builder.Services.AddSingleton<IPwmController, GpioPwmController>();
 }
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || Environment.GetEnvironmentVariable("NO_FAN_RPM") is not null)
 {
   builder.Services.AddSingleton<IFanRpmSensor, DummyFanRpmSensor>();
 }
