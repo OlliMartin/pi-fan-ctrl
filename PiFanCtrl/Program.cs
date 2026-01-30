@@ -95,7 +95,8 @@ if (influxConfiguration.Exists() && Environment.GetEnvironmentVariable("NO_INFLU
   builder.Services.AddSingleton<IReadingStore, InfluxReadingStore>();
 }
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+    Environment.GetEnvironmentVariable("NO_PWM") is not null)
 {
   builder.Services.AddSingleton<IPwmController, DummyPwmController>();
 }

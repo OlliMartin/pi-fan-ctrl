@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan Control SignalR Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .reset-btn {
+            background-color: #dc3545;
+        }
+        .reset-btn:hover {
+            background-color: #c82333;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .reading {
+            background-color: #e7f3ff;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fan Control SignalR Test Client</h1>
+        
+        <div class="section">
+            <h2>Connection Status</h2>
+            <div id="connectionStatus" class="status disconnected">Disconnected</div>
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div class="section">
+            <h2>Current Readings</h2>
+            <div id="temperatureReadings"></div>
+            <div id="rpmReadings"></div>
+        </div>
+
+        <div class="section">
+            <h2>Simulate Temperature</h2>
+            <input type="number" id="tempInput" placeholder="Temperature (°C)" value="45" step="0.1">
+            <button onclick="simulateTemperature()">Simulate</button>
+        </div>
+
+        <div class="section">
+            <h2>Set Fan Speed</h2>
+            <input type="number" id="speedInput" placeholder="Speed (%)" value="80" min="0" max="100" step="1">
+            <button onclick="setFanSpeed()">Set Speed</button>
+        </div>
+
+        <div class="section">
+            <h2>Reset</h2>
+            <button class="reset-btn" onclick="resetSettings()">Reset Fan Settings</button>
+        </div>
+
+        <div class="section">
+            <h2>Event Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        let connection;
+        const temperatureReadings = {};
+        const rpmReadings = {};
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (connected) {
+                statusDiv.textContent = 'Connected';
+                statusDiv.className = 'status connected';
+            } else {
+                statusDiv.textContent = 'Disconnected';
+                statusDiv.className = 'status disconnected';
+            }
+        }
+
+        function updateTemperatureDisplay() {
+            const div = document.getElementById('temperatureReadings');
+            div.innerHTML = '<h3>Temperature Readings</h3>';
+            for (const [source, data] of Object.entries(temperatureReadings)) {
+                div.innerHTML += `<div class="reading"><strong>${source}:</strong> ${data.value.toFixed(2)}°C (${new Date(data.timestamp).toLocaleTimeString()})</div>`;
+            }
+        }
+
+        function updateRpmDisplay() {
+            const div = document.getElementById('rpmReadings');
+            div.innerHTML = '<h3>Fan RPM Readings</h3>';
+            for (const [source, data] of Object.entries(rpmReadings)) {
+                div.innerHTML += `<div class="reading"><strong>${source}:</strong> ${data.value.toFixed(0)} RPM (${new Date(data.timestamp).toLocaleTimeString()})</div>`;
+            }
+        }
+
+        async function connect() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                log('Already connected');
+                return;
+            }
+
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/fancontrol")
+                .withAutomaticReconnect()
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            connection.on("TemperatureUpdate", (data) => {
+                log(`Temperature update from ${data.source}: ${data.value}°C`);
+                temperatureReadings[data.source] = data;
+                updateTemperatureDisplay();
+            });
+
+            connection.on("FanRpmUpdate", (data) => {
+                log(`Fan RPM update from ${data.source}: ${data.value} RPM`);
+                rpmReadings[data.source] = data;
+                updateRpmDisplay();
+            });
+
+            connection.on("TemperatureSimulated", (temperature) => {
+                log(`Temperature simulated: ${temperature}°C`);
+            });
+
+            connection.on("FanSpeedSet", (speed) => {
+                log(`Fan speed set to: ${speed}%`);
+            });
+
+            connection.on("FanSettingsReset", () => {
+                log('Fan settings reset to original configuration');
+            });
+
+            connection.onreconnecting(() => {
+                log('Reconnecting...');
+                updateConnectionStatus(false);
+            });
+
+            connection.onreconnected(() => {
+                log('Reconnected');
+                updateConnectionStatus(true);
+            });
+
+            connection.onclose(() => {
+                log('Connection closed');
+                updateConnectionStatus(false);
+            });
+
+            try {
+                await connection.start();
+                log('Connected to SignalR hub');
+                updateConnectionStatus(true);
+                
+                // Request current values
+                await connection.invoke("GetCurrentTemperature");
+            } catch (err) {
+                log(`Error connecting: ${err}`);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function disconnect() {
+            if (connection) {
+                await connection.stop();
+                log('Disconnected');
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function simulateTemperature() {
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected to SignalR hub');
+                return;
+            }
+
+            const temperature = parseFloat(document.getElementById('tempInput').value);
+            if (isNaN(temperature)) {
+                alert('Please enter a valid temperature');
+                return;
+            }
+
+            try {
+                await connection.invoke("SimulateTemperature", temperature);
+                log(`Sent temperature simulation: ${temperature}°C`);
+            } catch (err) {
+                log(`Error simulating temperature: ${err}`);
+            }
+        }
+
+        async function setFanSpeed() {
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected to SignalR hub');
+                return;
+            }
+
+            const speed = parseFloat(document.getElementById('speedInput').value);
+            if (isNaN(speed) || speed < 0 || speed > 100) {
+                alert('Please enter a valid speed (0-100)');
+                return;
+            }
+
+            try {
+                await connection.invoke("SetFanSpeed", speed);
+                log(`Sent fan speed command: ${speed}%`);
+            } catch (err) {
+                log(`Error setting fan speed: ${err}`);
+            }
+        }
+
+        async function resetSettings() {
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('Not connected to SignalR hub');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to reset fan settings to original configuration?')) {
+                return;
+            }
+
+            try {
+                await connection.invoke("ResetFanSettings");
+                log('Sent reset command');
+            } catch (err) {
+                log(`Error resetting settings: ${err}`);
+            }
+        }
+
+        // Auto-connect on page load
+        window.addEventListener('load', () => {
+            log('Page loaded. Click "Connect" to start.');
+        });
+    </script>
+</body>
+</html>
