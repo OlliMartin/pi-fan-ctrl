@@ -82,6 +82,13 @@ public class FanControlHub : Hub
 
   public async Task SimulateTemperature(decimal temperature)
   {
+    // Validate temperature range (-273.15°C is absolute zero, 200°C is a reasonable upper limit)
+    if (temperature < -273.15m || temperature > 200m)
+    {
+      _logger.LogWarning("Invalid temperature value: {Temperature}. Must be between -273.15 and 200", temperature);
+      throw new ArgumentOutOfRangeException(nameof(temperature), temperature, "Temperature must be between -273.15 and 200");
+    }
+
     _logger.LogInformation("Simulating temperature: {Temperature}", temperature);
     _dummyTemperatureSensor.Simulate(temperature);
     await Clients.All.SendAsync("TemperatureSimulated", temperature);
@@ -89,6 +96,13 @@ public class FanControlHub : Hub
 
   public async Task SetFanSpeed(decimal speedPercentage)
   {
+    // Validate speed percentage range
+    if (speedPercentage < 0m || speedPercentage > 100m)
+    {
+      _logger.LogWarning("Invalid fan speed value: {Speed}. Must be between 0 and 100", speedPercentage);
+      throw new ArgumentOutOfRangeException(nameof(speedPercentage), speedPercentage, "Fan speed must be between 0 and 100");
+    }
+
     _logger.LogInformation("Setting fan speed to {Speed}%", speedPercentage);
     
     var currentSettings = _fanSpeedCalculator.FanSettings;

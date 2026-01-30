@@ -18,7 +18,11 @@ public class FanSpeedCalculator
   public FanSpeedCalculator(IOptions<FanSettings> fanSettingsOptions)
   {
     _fanSettings = fanSettingsOptions.Value;
-    _originalFanSettings = _fanSettings with { };
+    // Deep copy the original settings including CurvePoints
+    _originalFanSettings = _fanSettings with
+    {
+      CurvePoints = _fanSettings.CurvePoints.Select(cp => cp with { }).ToList()
+    };
 
     ConstructCurveGenerator();
   }
@@ -55,7 +59,11 @@ public class FanSpeedCalculator
 
   public void ResetFanSettings()
   {
-    _fanSettings = _originalFanSettings with { };
+    // Deep copy the original settings including CurvePoints
+    _fanSettings = _originalFanSettings with
+    {
+      CurvePoints = _originalFanSettings.CurvePoints.Select(cp => cp with { }).ToList()
+    };
     ConstructCurveGenerator();
   }
 }
