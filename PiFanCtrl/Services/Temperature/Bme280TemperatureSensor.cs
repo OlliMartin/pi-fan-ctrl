@@ -9,17 +9,17 @@ using PiFanCtrl.Model.Settings;
 
 namespace PiFanCtrl.Services.Temperature;
 
-public sealed class Bmp280TemperatureSensor : BmX280TemperatureSensor
+public sealed class Bme280TemperatureSensor : BmX280TemperatureSensor
 {
-  public Bmp280TemperatureSensor(
-    ILogger<Bmp280TemperatureSensor> logger,
+  public Bme280TemperatureSensor(
+    ILogger<Bme280TemperatureSensor> logger,
     I2CSensorConfiguration sensorConfiguration
   ) : base(logger, sensorConfiguration)
   {
   }
 
-  protected override string SensorTypeName => "BMP280";
+  protected override string SensorTypeName => "BME280";
 
   protected override Func<I2cDevice, Bmx280Base> SensorFactory { get; }
-    = (device) => new Bmp280(device);
+    = (device) => new Bme280(device);
 }

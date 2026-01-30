@@ -8,6 +8,7 @@ public enum TemperatureSensor
   DHT22,
   Unifi,
   BMP280,
+  BME280,
 }
 
 public class HardwareSensorConfiguration : SensorConfiguration

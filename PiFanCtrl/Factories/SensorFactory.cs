@@ -32,6 +32,7 @@ public static class SensorFactory
       TemperatureSensor.Unifi => sensorConfiguration.Get<UnifiSensorsConfiguration>(),
       TemperatureSensor.DHT22 => sensorConfiguration.Get<HardwareSensorConfiguration>(),
       TemperatureSensor.BMP280 => sensorConfiguration.Get<I2CSensorConfiguration>(),
+      TemperatureSensor.BME280 => sensorConfiguration.Get<I2CSensorConfiguration>(),
       var _ => throw new InvalidOperationException(
         $"Unknown sensor type {type}. This is a configuration error."
       ),
@@ -88,6 +89,17 @@ public static class SensorFactory
         {
           ILogger<Bmp280TemperatureSensor> logger = sp.GetRequiredService<ILogger<Bmp280TemperatureSensor>>();
           Bmp280TemperatureSensor sensor = new(logger, i2cCfg);
+          return sensor;
+        }
+      );
+    }
+    else if (i2cCfg.Type == TemperatureSensor.BME280)
+    {
+      serviceCollection.AddSingleton<ITemperatureSensor>(
+        sp =>
+        {
+          ILogger<Bme280TemperatureSensor> logger = sp.GetRequiredService<ILogger<Bme280TemperatureSensor>>();
+          Bme280TemperatureSensor sensor = new(logger, i2cCfg);
           return sensor;
         }
       );
