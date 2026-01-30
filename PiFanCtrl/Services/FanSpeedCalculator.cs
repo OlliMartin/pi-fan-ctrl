@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearRegression;
+using Microsoft.Extensions.Options;
 using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Services;
@@ -10,27 +11,14 @@ public class FanSpeedCalculator
   private Func<double, double> _curveGenerator;
 
   private FanSettings _fanSettings;
+  private readonly FanSettings _originalFanSettings;
 
   public FanSettings FanSettings => _fanSettings with { };
 
-  public FanSpeedCalculator()
+  public FanSpeedCalculator(IOptions<FanSettings> fanSettingsOptions)
   {
-    _fanSettings = new()
-    {
-      MinimumSpeedTemperature = 25,
-      MinimumSpeed = 40,
-      PanicFromTemperature = 55,
-      PanicSpeed = 100,
-      CurvePoints =
-      [
-        new()
-        {
-          Active = true,
-          Temperature = 40,
-          FanPercentage = 80,
-        },
-      ],
-    };
+    _fanSettings = fanSettingsOptions.Value;
+    _originalFanSettings = _fanSettings with { };
 
     ConstructCurveGenerator();
   }
@@ -62,6 +50,12 @@ public class FanSpeedCalculator
   public void UpdateFanSettings(FanSettings fanSettings)
   {
     _fanSettings = fanSettings;
+    ConstructCurveGenerator();
+  }
+
+  public void ResetFanSettings()
+  {
+    _fanSettings = _originalFanSettings with { };
     ConstructCurveGenerator();
   }
 }

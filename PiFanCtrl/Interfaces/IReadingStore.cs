@@ -12,4 +12,12 @@ public interface IReadingStore
   );
 
   public IEnumerable<IReading> GetAll();
+
+  public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
+}
+
+public class ReadingChangedEventArgs(string source, IReading reading) : EventArgs
+{
+  public string Source { get; } = source;
+  public IReading Reading { get; } = reading;
 }

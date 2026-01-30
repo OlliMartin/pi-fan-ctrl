@@ -88,6 +88,8 @@ public sealed class InfluxReadingStore
 
   public IEnumerable<IReading> GetAll() => throw new NotImplementedException();
 
+  public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
+
   public void Dispose()
   {
     Stopwatch sw = Stopwatch.StartNew();

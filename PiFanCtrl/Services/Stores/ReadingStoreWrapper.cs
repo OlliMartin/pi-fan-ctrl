@@ -5,6 +5,8 @@ namespace PiFanCtrl.Services.Stores;
 
 public class ReadingStoreWrapper(IEnumerable<IReadingStore> stores) : IReadingStore
 {
+  public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
+
   public async Task AddAsync(IReading reading, CancellationToken cancelToken = default)
     => await Task.WhenAll(stores.Select(store => store.AddAsync(reading, cancelToken)));
 

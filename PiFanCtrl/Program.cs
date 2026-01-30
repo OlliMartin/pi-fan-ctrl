@@ -4,6 +4,7 @@ using OpenTelemetry.Resources;
 using PiFanCtrl.Components;
 using PiFanCtrl.Factories;
 using PiFanCtrl.Interfaces;
+using PiFanCtrl.Model;
 using PiFanCtrl.Model.Settings;
 using PiFanCtrl.Services;
 using PiFanCtrl.Services.FanRpm;
@@ -56,6 +57,8 @@ builder.Services.AddLogging(
 
 IConfigurationSection rootConfiguration = builder.Configuration.GetSection(RootSettings.SECTION_NAME);
 
+IConfigurationSection fanSettingsConfiguration = builder.Configuration.GetSection("FanSettings");
+
 IConfigurationSection pwmConfiguration = rootConfiguration.GetSection(PwmPinConfiguration.SECTION_NAME);
 
 IConfigurationSection temperatureConfiguration =
@@ -66,6 +69,7 @@ IConfigurationSection fanRpmConfiguration = rootConfiguration.GetSection(FanRpmP
 IConfigurationSection influxConfiguration = rootConfiguration.GetSection(InfluxConfiguration.SECTION_NAME);
 
 builder.Services.Configure<RootSettings>(rootConfiguration)
+  .Configure<FanSettings>(fanSettingsConfiguration)
   .Configure<PwmPinConfiguration>(pwmConfiguration)
   .Configure<TemperatureSensorConfiguration>(temperatureConfiguration)
   .Configure<FanRpmPinConfiguration>(fanRpmConfiguration)
@@ -112,6 +116,7 @@ else
 
 builder.Services.AddHostedService<PwmControlWorker>();
 builder.Services.AddHostedService<FanRpmWorker>();
+builder.Services.AddHostedService<ReadingPushService>();
 
 if (Environment.GetEnvironmentVariable("NO_SENSORS") is null)
 {
@@ -119,6 +124,8 @@ if (Environment.GetEnvironmentVariable("NO_SENSORS") is null)
 }
 
 builder.Services.AddControllers();
+
+builder.Services.AddSignalR();
 
 WebApplication app = builder.Build();
 
@@ -136,6 +143,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapControllers();
+app.MapHub<PiFanCtrl.Hubs.FanControlHub>("/hubs/fancontrol");
 
 app.MapRazorComponents<App>()
   .AddInteractiveServerRenderMode();
