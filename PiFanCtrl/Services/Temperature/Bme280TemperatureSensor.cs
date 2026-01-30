@@ -18,7 +18,7 @@ public sealed class Bme280TemperatureSensor : BmX280TemperatureSensor
   {
   }
 
-  protected override string SensorTypeName => "BMP280";
+  protected override string SensorTypeName => "BME280";
 
   protected override Func<I2cDevice, Bmx280Base> SensorFactory { get; }
     = (device) => new Bme280(device);

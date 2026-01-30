@@ -112,12 +112,14 @@ public abstract class BmX280TemperatureSensor : ITemperatureSensor, IDisposable
         return [];
       }
 
+      val = (decimal)temp.Value;
+
       return
       [
         new()
         {
           Source = Name,
-          Value = (decimal)temp.Value,
+          Value = val.Value,
         },
       ];
     }
@@ -136,12 +138,12 @@ public abstract class BmX280TemperatureSensor : ITemperatureSensor, IDisposable
   public void Dispose()
   {
     Stopwatch sw = Stopwatch.StartNew();
-    _logger.LogInformation("Disposing {name}.", nameof(Bmp280TemperatureSensor));
+    _logger.LogInformation("Disposing {name}.", SensorTypeName);
 
     _sensor?.Dispose();
     _i2cDevice?.Dispose();
 
     sw.Stop();
-    _logger.LogDebug("{name} disposed in {elapsed}.", nameof(Bmp280TemperatureSensor), sw.Elapsed);
+    _logger.LogDebug("{name} disposed in {elapsed}.", SensorTypeName, sw.Elapsed);
   }
 }
