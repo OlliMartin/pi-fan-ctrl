@@ -19,7 +19,7 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
   private readonly int _i2cAddress;
   private I2cDevice? _i2cDevice;
-  private Bmp280? _sensor;
+  private Bme280? _sensor;
 
   public Bmp280TemperatureSensor(
     ILogger<Bmp280TemperatureSensor> logger,
@@ -105,8 +105,8 @@ public sealed class Bmp280TemperatureSensor : ITemperatureSensor, IDisposable
 
     try
     {
-      Bmp280ReadResult? reading =
-        await (_sensor?.ReadAsync() ?? Task.FromResult<Bmp280ReadResult>(null!));
+      Bme280ReadResult? reading =
+        await (_sensor?.ReadAsync() ?? Task.FromResult<Bme280ReadResult>(null!));
 
       val = (decimal?)reading?.Temperature?.Value;
 
