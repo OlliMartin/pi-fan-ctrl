@@ -168,3 +168,12 @@ Desktop.ini
 .DS_Store
 
 **/runtimes/
+
+# Node.js / NPM
+**/node_modules/
+**/*.tgz
+**/package-lock.json
+
+# TypeScript
+**/dist/
+**/*.tsbuildinfo
