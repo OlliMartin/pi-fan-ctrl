@@ -17,6 +17,7 @@ namespace PiFanCtrl.DataStructures;
 public class CircularBuffer<T> : IEnumerable<T>
 {
   private readonly T[] _buffer;
+  private readonly object _lock = new();
 
   /// <summary>
   /// The _start. Index of the first element in buffer.
@@ -118,7 +119,13 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// </summary>
   public int Size
   {
-    get { return _size; }
+    get
+    {
+      lock (_lock)
+      {
+        return _size;
+      }
+    }
   }
 
   /// <summary>
@@ -127,8 +134,11 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <returns>The value of the element of type T at the front of the buffer.</returns>
   public T Front()
   {
-    ThrowIfEmpty();
-    return _buffer[_start];
+    lock (_lock)
+    {
+      ThrowIfEmpty();
+      return _buffer[_start];
+    }
   }
 
   /// <summary>
@@ -137,8 +147,11 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <returns>The value of the element of type T at the back of the buffer.</returns>
   public T Back()
   {
-    ThrowIfEmpty();
-    return _buffer[(_end != 0 ? _end : Capacity) - 1];
+    lock (_lock)
+    {
+      ThrowIfEmpty();
+      return _buffer[(_end != 0 ? _end : Capacity) - 1];
+    }
   }
 
   /// <summary>
@@ -152,35 +165,41 @@ public class CircularBuffer<T> : IEnumerable<T>
   {
     get
     {
-      if (IsEmpty)
+      lock (_lock)
       {
-        throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty", index));
-      }
+        if (IsEmpty)
+        {
+          throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty", index));
+        }
 
-      if (index >= _size)
-      {
-        throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}", index,
-          _size));
-      }
+        if (index >= _size)
+        {
+          throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}", index,
+            _size));
+        }
 
-      int actualIndex = InternalIndex(index);
-      return _buffer[actualIndex];
+        int actualIndex = InternalIndex(index);
+        return _buffer[actualIndex];
+      }
     }
     set
     {
-      if (IsEmpty)
+      lock (_lock)
       {
-        throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty", index));
-      }
+        if (IsEmpty)
+        {
+          throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer is empty", index));
+        }
 
-      if (index >= _size)
-      {
-        throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}", index,
-          _size));
-      }
+        if (index >= _size)
+        {
+          throw new IndexOutOfRangeException(string.Format("Cannot access index {0}. Buffer size is {1}", index,
+            _size));
+        }
 
-      int actualIndex = InternalIndex(index);
-      _buffer[actualIndex] = value;
+        int actualIndex = InternalIndex(index);
+        _buffer[actualIndex] = value;
+      }
     }
   }
 
@@ -194,17 +213,20 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <param name="item">Item to push to the back of the buffer</param>
   public void PushBack(T item)
   {
-    if (IsFull)
+    lock (_lock)
     {
-      _buffer[_end] = item;
-      Increment(ref _end);
-      _start = _end;
-    }
-    else
-    {
-      _buffer[_end] = item;
-      Increment(ref _end);
-      ++_size;
+      if (IsFull)
+      {
+        _buffer[_end] = item;
+        Increment(ref _end);
+        _start = _end;
+      }
+      else
+      {
+        _buffer[_end] = item;
+        Increment(ref _end);
+        ++_size;
+      }
     }
   }
 
@@ -218,17 +240,20 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <param name="item">Item to push to the front of the buffer</param>
   public void PushFront(T item)
   {
-    if (IsFull)
+    lock (_lock)
     {
-      Decrement(ref _start);
-      _end = _start;
-      _buffer[_start] = item;
-    }
-    else
-    {
-      Decrement(ref _start);
-      _buffer[_start] = item;
-      ++_size;
+      if (IsFull)
+      {
+        Decrement(ref _start);
+        _end = _start;
+        _buffer[_start] = item;
+      }
+      else
+      {
+        Decrement(ref _start);
+        _buffer[_start] = item;
+        ++_size;
+      }
     }
   }
 
@@ -238,10 +263,13 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// </summary>
   public void PopBack()
   {
-    ThrowIfEmpty("Cannot take elements from an empty buffer.");
-    Decrement(ref _end);
-    _buffer[_end] = default(T);
-    --_size;
+    lock (_lock)
+    {
+      ThrowIfEmpty("Cannot take elements from an empty buffer.");
+      Decrement(ref _end);
+      _buffer[_end] = default(T);
+      --_size;
+    }
   }
 
   /// <summary>
@@ -250,10 +278,13 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// </summary>
   public void PopFront()
   {
-    ThrowIfEmpty("Cannot take elements from an empty buffer.");
-    _buffer[_start] = default(T);
-    Increment(ref _start);
-    --_size;
+    lock (_lock)
+    {
+      ThrowIfEmpty("Cannot take elements from an empty buffer.");
+      _buffer[_start] = default(T);
+      Increment(ref _start);
+      --_size;
+    }
   }
 
   /// <summary>
@@ -262,11 +293,14 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <exception cref="NotImplementedException"></exception>
   public void Clear()
   {
-    // to clear we just reset everything.
-    _start = 0;
-    _end = 0;
-    _size = 0;
-    Array.Clear(_buffer, 0, _buffer.Length);
+    lock (_lock)
+    {
+      // to clear we just reset everything.
+      _start = 0;
+      _end = 0;
+      _size = 0;
+      Array.Clear(_buffer, 0, _buffer.Length);
+    }
   }
 
   /// <summary>
@@ -277,16 +311,19 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <returns>A new array with a copy of the buffer contents.</returns>
   public T[] ToArray()
   {
-    T[] newArray = new T[Size];
-    int newArrayOffset = 0;
-    var segments = ToArraySegments();
-    foreach (ArraySegment<T> segment in segments)
+    lock (_lock)
     {
-      Array.Copy(segment.Array, segment.Offset, newArray, newArrayOffset, segment.Count);
-      newArrayOffset += segment.Count;
-    }
+      T[] newArray = new T[Size];
+      int newArrayOffset = 0;
+      var segments = ToArraySegments();
+      foreach (ArraySegment<T> segment in segments)
+      {
+        Array.Copy(segment.Array, segment.Offset, newArray, newArrayOffset, segment.Count);
+        newArrayOffset += segment.Count;
+      }
 
-    return newArray;
+      return newArray;
+    }
   }
 
   /// <summary>
@@ -303,7 +340,10 @@ public class CircularBuffer<T> : IEnumerable<T>
   /// <returns>An IList with 2 segments corresponding to the buffer content.</returns>
   public IList<ArraySegment<T>> ToArraySegments()
   {
-    return new[] { ArrayOne(), ArrayTwo() };
+    lock (_lock)
+    {
+      return new[] { ArrayOne(), ArrayTwo() };
+    }
   }
 
   #region IEnumerable<T> implementation

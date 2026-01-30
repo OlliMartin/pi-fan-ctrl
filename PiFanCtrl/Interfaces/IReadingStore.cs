@@ -13,11 +13,19 @@ public interface IReadingStore
 
   public IEnumerable<IReading> GetAll();
 
+  public decimal? GetLatest(string source);
+
   public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
 }
 
-public class ReadingChangedEventArgs(string source, IReading reading) : EventArgs
+public sealed class ReadingChangedEventArgs : EventArgs
 {
-  public string Source { get; } = source;
-  public IReading Reading { get; } = reading;
+  public string Source { get; }
+  public IReading Reading { get; }
+
+  public ReadingChangedEventArgs(string source, IReading reading)
+  {
+    Source = source;
+    Reading = reading;
+  }
 }

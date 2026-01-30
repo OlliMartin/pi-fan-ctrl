@@ -2,19 +2,20 @@ using Microsoft.AspNetCore.SignalR;
 using PiFanCtrl.Hubs;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
+using PiFanCtrl.Model.SignalR;
 using PiFanCtrl.Services.Stores;
 
 namespace PiFanCtrl.Services;
 
 public class ReadingPushService : IHostedService
 {
-  private readonly SlidingReadingStore _readingStore;
-  private readonly IHubContext<FanControlHub> _hubContext;
+  private readonly IReadingStore _readingStore;
+  private readonly IHubContext<FanControlHub, IFanControlClient> _hubContext;
   private readonly ILogger<ReadingPushService> _logger;
 
   public ReadingPushService(
-    SlidingReadingStore readingStore,
-    IHubContext<FanControlHub> hubContext,
+    [FromKeyedServices("delegating")] IReadingStore readingStore,
+    IHubContext<FanControlHub, IFanControlClient> hubContext,
     ILogger<ReadingPushService> logger)
   {
     _readingStore = readingStore;
@@ -37,21 +38,19 @@ public class ReadingPushService : IHostedService
       
       if (reading is TemperatureReading tempReading && tempReading.Active)
       {
-        await _hubContext.Clients.All.SendAsync("TemperatureUpdate", new
-        {
-          source = tempReading.Source,
-          value = tempReading.Value,
-          timestamp = tempReading.AsOf
-        });
+        await _hubContext.Clients.All.TemperatureUpdate(new TemperatureUpdateDto(
+          tempReading.Source,
+          tempReading.Value,
+          tempReading.AsOf
+        ));
       }
       else if (reading is FanRpmReading rpmReading)
       {
-        await _hubContext.Clients.All.SendAsync("FanRpmUpdate", new
-        {
-          source = rpmReading.Source,
-          value = rpmReading.Value,
-          timestamp = rpmReading.AsOf
-        });
+        await _hubContext.Clients.All.FanRpmUpdate(new FanRpmUpdateDto(
+          rpmReading.Source,
+          rpmReading.Value,
+          rpmReading.AsOf
+        ));
       }
     }
     catch (Exception ex)

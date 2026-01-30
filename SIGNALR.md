@@ -244,13 +244,13 @@ These settings are loaded at startup and can be restored using the `ResetFanSett
 For development/testing on systems without GPIO hardware, use the following environment variables:
 
 ```bash
-NO_PWM=1         # Use dummy PWM controller instead of GPIO
-NO_FAN_RPM=1     # Use dummy RPM sensor instead of GPIO
-NO_SENSORS=1     # Disable hardware sensors
-NO_INFLUX=1      # Disable InfluxDB integration
+NO_PWM=true         # Use dummy PWM controller instead of GPIO
+NO_FAN_RPM=true     # Use dummy RPM sensor instead of GPIO
+NO_SENSORS=true     # Disable hardware sensors
+NO_INFLUX=true      # Disable InfluxDB integration
 ```
 
 Example:
 ```bash
-NO_PWM=1 NO_FAN_RPM=1 NO_SENSORS=1 NO_INFLUX=1 dotnet run
+NO_PWM=true NO_FAN_RPM=true NO_SENSORS=true NO_INFLUX=true dotnet run
 ```

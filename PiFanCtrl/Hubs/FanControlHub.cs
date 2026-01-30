@@ -1,26 +1,29 @@
 using Microsoft.AspNetCore.SignalR;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
+using PiFanCtrl.Model.SignalR;
 using PiFanCtrl.Services;
 using PiFanCtrl.Services.Stores;
 using PiFanCtrl.Services.Temperature;
 
 namespace PiFanCtrl.Hubs;
 
-public class FanControlHub : Hub
+public class FanControlHub : Hub<IFanControlClient>
 {
-  private readonly SlidingReadingStore _readingStore;
+  private readonly IReadingStore _readingStore;
+  private readonly ReadingStoreWrapper _delegatingStore;
   private readonly DummyTemperatureSensor _dummyTemperatureSensor;
   private readonly FanSpeedCalculator _fanSpeedCalculator;
   private readonly ILogger<FanControlHub> _logger;
 
   public FanControlHub(
-    SlidingReadingStore readingStore,
+    [FromKeyedServices("delegating")] IReadingStore readingStore,
     DummyTemperatureSensor dummyTemperatureSensor,
     FanSpeedCalculator fanSpeedCalculator,
     ILogger<FanControlHub> logger)
   {
     _readingStore = readingStore;
+    _delegatingStore = (ReadingStoreWrapper)readingStore;
     _dummyTemperatureSensor = dummyTemperatureSensor;
     _fanSpeedCalculator = fanSpeedCalculator;
     _logger = logger;
@@ -38,45 +41,50 @@ public class FanControlHub : Hub
 
   public override async Task OnDisconnectedAsync(Exception? exception)
   {
-    _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
+    if (exception != null)
+    {
+      _logger.LogError(exception, "Client disconnected with error: {ConnectionId}", Context.ConnectionId);
+    }
+    else
+    {
+      _logger.LogInformation("Client disconnected: {ConnectionId}", Context.ConnectionId);
+    }
     await base.OnDisconnectedAsync(exception);
   }
 
   private async Task SendCurrentValues()
   {
-    // Get latest temperature
-    var temperatureReadings = _readingStore.GetAll()
-      .OfType<TemperatureReading>()
-      .Where(r => r.Active)
-      .GroupBy(r => r.Source)
-      .Select(g => g.OrderByDescending(r => r.AsOf).First())
-      .ToList();
+    // Get all known sources from the delegating store
+    var sources = _delegatingStore.GetKnownSources();
 
-    // Get latest fan RPM
-    var rpmReadings = _readingStore.GetAll()
-      .OfType<FanRpmReading>()
-      .GroupBy(r => r.Source)
-      .Select(g => g.OrderByDescending(r => r.AsOf).First())
-      .ToList();
-
-    foreach (var reading in temperatureReadings)
+    foreach (var source in sources)
     {
-      await Clients.Caller.SendAsync("TemperatureUpdate", new
+      var value = _readingStore.GetLatest(source);
+      if (value.HasValue)
       {
-        source = reading.Source,
-        value = reading.Value,
-        timestamp = reading.AsOf
-      });
-    }
-
-    foreach (var reading in rpmReadings)
-    {
-      await Clients.Caller.SendAsync("FanRpmUpdate", new
-      {
-        source = reading.Source,
-        value = reading.Value,
-        timestamp = reading.AsOf
-      });
+        // Determine the type based on source naming or check actual readings
+        // For now, we'll check if it's a temperature or RPM based on common patterns
+        if (source.Contains("Temp", StringComparison.OrdinalIgnoreCase) ||
+            source == "Simulated" ||
+            source == "Aggregate" ||
+            source.Contains("BMP", StringComparison.OrdinalIgnoreCase))
+        {
+          await Clients.Caller.TemperatureUpdate(new TemperatureUpdateDto(
+            source,
+            value.Value,
+            DateTime.UtcNow
+          ));
+        }
+        else if (source.Contains("Rpm", StringComparison.OrdinalIgnoreCase) ||
+                 source.Contains("Fan", StringComparison.OrdinalIgnoreCase))
+        {
+          await Clients.Caller.FanRpmUpdate(new FanRpmUpdateDto(
+            source,
+            value.Value,
+            DateTime.UtcNow
+          ));
+        }
+      }
     }
   }
 
@@ -91,7 +99,7 @@ public class FanControlHub : Hub
 
     _logger.LogInformation("Simulating temperature: {Temperature}", temperature);
     _dummyTemperatureSensor.Simulate(temperature);
-    await Clients.All.SendAsync("TemperatureSimulated", temperature);
+    await Clients.All.TemperatureSimulated(new TemperatureSimulatedDto(temperature));
   }
 
   public async Task SetFanSpeed(decimal speedPercentage)
@@ -113,7 +121,7 @@ public class FanControlHub : Hub
     };
 
     _fanSpeedCalculator.UpdateFanSettings(newSettings);
-    await Clients.All.SendAsync("FanSpeedSet", speedPercentage);
+    await Clients.All.FanSpeedSet(new FanSpeedSetDto(speedPercentage));
   }
 
   public async Task ResetFanSettings()
@@ -121,7 +129,7 @@ public class FanControlHub : Hub
     _logger.LogInformation("Resetting fan settings to original configuration");
     _fanSpeedCalculator.ResetFanSettings();
     _dummyTemperatureSensor.Reset();
-    await Clients.All.SendAsync("FanSettingsReset");
+    await Clients.All.FanSettingsReset(new FanSettingsResetDto());
   }
 
   public async Task GetCurrentTemperature()
