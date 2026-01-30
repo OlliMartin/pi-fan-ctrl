@@ -107,6 +107,9 @@ public abstract class BmX280TemperatureSensor : ITemperatureSensor, IDisposable
 
     try
     {
+      await ((_sensor as Bmp280)?.ReadAsync() ?? Task.CompletedTask);
+      await ((_sensor as Bme280)?.ReadAsync() ?? Task.CompletedTask);
+
       if (_sensor?.TryReadTemperature(out UnitsNet.Temperature temp) is not true)
       {
         return [];
