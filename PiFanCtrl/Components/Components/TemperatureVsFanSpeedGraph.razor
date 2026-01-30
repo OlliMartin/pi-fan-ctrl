@@ -69,7 +69,7 @@
 
         datasets.Add(dataset1);
 
-        decimal? latestAggregate = readingStore.GetLatest(TemperatureWrapper.AGGREGATE_READING_NAME);
+        decimal? latestAggregate = readingStore.GetLatest(TemperatureWrapper.AGGREGATE_READING_NAME)?.Value;
 
         if (latestAggregate is not null)
         {

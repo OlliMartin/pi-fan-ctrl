@@ -36,8 +36,8 @@ public class SlidingReadingStore : IReadingStore
     return _buffer.ToArray(); // ToArray() is now thread-safe
   }
 
-  public decimal? GetLatest(string source)
+  public IReading? GetLatest(string source)
   {
-    return _buffer.Where(r => r.Source == source).OrderByDescending(r => r.AsOf).FirstOrDefault()?.Value;
+    return _buffer.Where(r => r.Source == source).OrderByDescending(r => r.AsOf).FirstOrDefault();
   }
 }

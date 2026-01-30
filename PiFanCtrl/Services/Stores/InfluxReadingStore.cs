@@ -88,7 +88,7 @@ public sealed class InfluxReadingStore
 
   public IEnumerable<IReading> GetAll() => throw new NotImplementedException();
 
-  public decimal? GetLatest(string source) => null; // Influx store doesn't support this operation
+  public IReading? GetLatest(string source) => null; // Influx store doesn't support this operation
 
   public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
 

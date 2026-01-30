@@ -59,33 +59,35 @@ public class FanControlHub : Hub<IFanControlClient>
 
     foreach (var source in sources)
     {
-      var value = _readingStore.GetLatest(source);
-      if (value.HasValue)
+      var reading = _readingStore.GetLatest(source);
+      if (reading != null)
       {
-        // Determine the type based on source naming or check actual readings
-        // For now, we'll check if it's a temperature or RPM based on common patterns
-        if (source.Contains("Temp", StringComparison.OrdinalIgnoreCase) ||
-            source == "Simulated" ||
-            source == "Aggregate" ||
-            source.Contains("BMP", StringComparison.OrdinalIgnoreCase))
+        // Use switch expression to determine the type and send appropriate update
+        await (reading switch
         {
-          await Clients.Caller.TemperatureUpdate(new TemperatureUpdateDto(
-            source,
-            value.Value,
-            DateTime.UtcNow
-          ));
-        }
-        else if (source.Contains("Rpm", StringComparison.OrdinalIgnoreCase) ||
-                 source.Contains("Fan", StringComparison.OrdinalIgnoreCase))
-        {
-          await Clients.Caller.FanRpmUpdate(new FanRpmUpdateDto(
-            source,
-            value.Value,
-            DateTime.UtcNow
-          ));
-        }
+          TemperatureReading tempReading when tempReading.Active => 
+            Clients.Caller.TemperatureUpdate(new TemperatureUpdateDto(
+              tempReading.Source,
+              tempReading.Value,
+              tempReading.AsOf
+            )),
+          FanRpmReading rpmReading => 
+            Clients.Caller.FanRpmUpdate(new FanRpmUpdateDto(
+              rpmReading.Source,
+              rpmReading.Value,
+              rpmReading.AsOf
+            )),
+          _ => LogUnexpectedReadingType(reading)
+        });
       }
     }
+  }
+
+  private Task LogUnexpectedReadingType(IReading reading)
+  {
+    _logger.LogError("Unexpected IReading implementation received: {Type} from source {Source}", 
+      reading.GetType().Name, reading.Source);
+    return Task.CompletedTask;
   }
 
   public async Task SimulateTemperature(decimal temperature)

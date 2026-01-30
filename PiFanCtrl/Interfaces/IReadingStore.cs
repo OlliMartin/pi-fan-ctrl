@@ -13,7 +13,7 @@ public interface IReadingStore
 
   public IEnumerable<IReading> GetAll();
 
-  public decimal? GetLatest(string source);
+  public IReading? GetLatest(string source);
 
   public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
 }

@@ -44,15 +44,15 @@ public class ReadingStoreWrapper : IReadingStore
 
   public IEnumerable<IReading> GetAll() => throw new NotImplementedException();
 
-  public decimal? GetLatest(string source)
+  public IReading? GetLatest(string source)
   {
     // Get the latest value from the first store that has it (typically SlidingReadingStore)
     foreach (var store in _stores)
     {
-      var value = store.GetLatest(source);
-      if (value.HasValue)
+      var reading = store.GetLatest(source);
+      if (reading != null)
       {
-        return value;
+        return reading;
       }
     }
     return null;
