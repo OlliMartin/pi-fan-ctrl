@@ -1,11 +1,14 @@
+using Microsoft.Extensions.Options;
 using PiFanCtrl.Interfaces;
 using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Services;
 
 public class TemperatureWrapper(
+  ILogger<TemperatureWrapper> logger,
   IEnumerable<ITemperatureSensor> sensors,
-  [FromKeyedServices("delegating")] IReadingStore readingStore
+  [FromKeyedServices("delegating")] IReadingStore readingStore,
+  IOptions<FanSettings> fanSettingsOptions
 )
   : ITemperatureSensor
 {
@@ -54,6 +57,18 @@ public class TemperatureWrapper(
     CancellationToken cancelToken
   )
   {
+    if (readings.All(r => r.Active is false))
+    {
+      decimal fallback = fanSettingsOptions.Value.FallbackTemperature;
+
+      logger.LogWarning(
+        "All temperature readings are inactive. Using fallback temperature {Temperature}.",
+        fallback
+      );
+
+      return fallback;
+    }
+
     await readingStore.AddRangeAsync(readings, cancelToken);
 
     // TODO: Make configurable

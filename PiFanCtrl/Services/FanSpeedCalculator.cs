@@ -8,6 +8,7 @@ namespace PiFanCtrl.Services;
 
 public class FanSpeedCalculator
 {
+  private readonly ILogger<FanSpeedCalculator> _logger;
   private Func<double, double> _curveGenerator;
 
   private FanSettings _fanSettings;
@@ -15,13 +16,15 @@ public class FanSpeedCalculator
 
   public FanSettings FanSettings => _fanSettings with { };
 
-  public FanSpeedCalculator(IOptions<FanSettings> fanSettingsOptions)
+  public FanSpeedCalculator(ILogger<FanSpeedCalculator> logger, IOptions<FanSettings> fanSettingsOptions)
   {
+    _logger = logger;
     _fanSettings = fanSettingsOptions.Value;
+
     // Deep copy the original settings including CurvePoints
     _originalFanSettings = _fanSettings with
     {
-      CurvePoints = _fanSettings.CurvePoints.Select(cp => cp with { }).ToList()
+      CurvePoints = _fanSettings.CurvePoints.Select(cp => cp with { }).ToList(),
     };
 
     ConstructCurveGenerator();
@@ -47,8 +50,16 @@ public class FanSpeedCalculator
 
   public decimal CalculateFanSpeed(decimal temperature)
   {
-    decimal fromCurve = (decimal)_curveGenerator((double)temperature);
-    return ClampToPercentage(fromCurve);
+    try
+    {
+      decimal fromCurve = (decimal)_curveGenerator((double)temperature);
+      return ClampToPercentage(fromCurve);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error calculating fan speed from curve generator.");
+      return 100m;
+    }
   }
 
   public void UpdateFanSettings(FanSettings fanSettings)
@@ -62,8 +73,9 @@ public class FanSpeedCalculator
     // Deep copy the original settings including CurvePoints
     _fanSettings = _originalFanSettings with
     {
-      CurvePoints = _originalFanSettings.CurvePoints.Select(cp => cp with { }).ToList()
+      CurvePoints = _originalFanSettings.CurvePoints.Select(cp => cp with { }).ToList(),
     };
+
     ConstructCurveGenerator();
   }
 }
