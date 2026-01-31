@@ -130,6 +130,18 @@ if (!ParseEnvBool("NO_SENSORS"))
 
 builder.Services.AddControllers();
 
+// Add CORS support for SignalR connections
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("SignalRCorsPolicy", policy =>
+  {
+    policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials(); // Required for SignalR WebSocket connections
+  });
+});
+
 builder.Services.AddSignalR();
 
 WebApplication app = builder.Build();
@@ -143,6 +155,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS for SignalR connections
+app.UseCors("SignalRCorsPolicy");
 
 app.UseAntiforgery();
 
