@@ -36,22 +36,22 @@ public class ReadingPushService : IHostedService
     {
       var reading = e.Reading;
       
-      if (reading is TemperatureReading tempReading && tempReading.Active)
+      await (reading switch
       {
-        await _hubContext.Clients.All.TemperatureUpdate(new TemperatureUpdateDto(
-          tempReading.Source,
-          tempReading.Value,
-          tempReading.AsOf
-        ));
-      }
-      else if (reading is FanRpmReading rpmReading)
-      {
-        await _hubContext.Clients.All.FanRpmUpdate(new FanRpmUpdateDto(
-          rpmReading.Source,
-          rpmReading.Value,
-          rpmReading.AsOf
-        ));
-      }
+        TemperatureReading tempReading when tempReading.Active =>
+          _hubContext.Clients.All.TemperatureUpdate(new TemperatureUpdateDto(
+            tempReading.Source,
+            tempReading.Value,
+            tempReading.AsOf
+          )),
+        FanRpmReading rpmReading =>
+          _hubContext.Clients.All.FanRpmUpdate(new FanRpmUpdateDto(
+            rpmReading.Source,
+            rpmReading.Value,
+            rpmReading.AsOf
+          )),
+        _ => Task.CompletedTask
+      });
     }
     catch (Exception ex)
     {
