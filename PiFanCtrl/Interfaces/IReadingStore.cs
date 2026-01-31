@@ -12,4 +12,20 @@ public interface IReadingStore
   );
 
   public IEnumerable<IReading> GetAll();
+
+  public IReading? GetLatest(string source);
+
+  public event EventHandler<ReadingChangedEventArgs>? ReadingChanged;
+}
+
+public sealed class ReadingChangedEventArgs : EventArgs
+{
+  public string Source { get; }
+  public IReading Reading { get; }
+
+  public ReadingChangedEventArgs(string source, IReading reading)
+  {
+    Source = source;
+    Reading = reading;
+  }
 }

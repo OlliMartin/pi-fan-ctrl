@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Fan Control SignalR Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CORS Test - Fan Control SignalR</h1>
+    <p>This page tests if CORS is properly configured for SignalR connections.</p>
+    
+    <div>
+        <label>Server URL: <input type="text" id="serverUrl" value="http://localhost:8080" style="width: 250px;"></label>
+    </div>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testConnection()">Test Connection</button>
+    </div>
+    
+    <div id="status"></div>
+    <div id="log" class="log"></div>
+
+    <script src="/signalr.min.js"></script>
+    <script>
+        function log(message, isError = false) {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.style.color = isError ? 'red' : 'black';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function setStatus(message, isSuccess) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status ' + (isSuccess ? 'success' : 'error');
+            statusDiv.textContent = message;
+        }
+
+        async function testConnection() {
+            if (typeof signalR === 'undefined') {
+                setStatus('❌ SignalR library not loaded. Check your internet connection or ad blocker.', false);
+                log('SignalR library not loaded from CDN', true);
+                return;
+            }
+
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            if (!serverUrl) {
+                alert('Please enter a server URL');
+                return;
+            }
+
+            const baseUrl = serverUrl.replace(/\/$/, '');
+            const hubUrl = `${baseUrl}/hubs/fancontrol`;
+
+            log(`Attempting to connect to: ${hubUrl}`);
+            setStatus('Connecting...', false);
+
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl(hubUrl)
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            connection.on("TemperatureUpdate", (data) => {
+                log(`✓ Temperature: ${data.value}°C from ${data.source}`);
+            });
+
+            connection.on("FanRpmUpdate", (data) => {
+                log(`✓ Fan RPM: ${data.value} from ${data.source}`);
+            });
+
+            try {
+                await connection.start();
+                log('✅ Connected successfully!');
+                setStatus('✅ Connection successful! CORS is working correctly.', true);
+                
+                // Request current values
+                await connection.invoke("GetCurrentTemperature");
+                log('Requested current temperature values');
+                
+                // Keep connection open for a bit to receive updates
+                setTimeout(async () => {
+                    await connection.stop();
+                    log('Connection closed');
+                }, 5000);
+                
+            } catch (err) {
+                log(`❌ Connection failed: ${err.message}`, true);
+                if (err.message.includes('Failed to fetch') || err.message.includes('negotiation')) {
+                    setStatus('❌ CORS Error: Server is not allowing cross-origin connections. Make sure CORS is configured.', false);
+                    log('This error typically indicates a CORS configuration issue', true);
+                } else {
+                    setStatus(`❌ Connection failed: ${err.message}`, false);
+                }
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('Page loaded. Click "Test Connection" to verify CORS configuration.');
+        });
+    </script>
+</body>
+</html>

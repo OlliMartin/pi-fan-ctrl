@@ -4,6 +4,7 @@ using OpenTelemetry.Resources;
 using PiFanCtrl.Components;
 using PiFanCtrl.Factories;
 using PiFanCtrl.Interfaces;
+using PiFanCtrl.Model;
 using PiFanCtrl.Model.Settings;
 using PiFanCtrl.Services;
 using PiFanCtrl.Services.FanRpm;
@@ -56,6 +57,8 @@ builder.Services.AddLogging(
 
 IConfigurationSection rootConfiguration = builder.Configuration.GetSection(RootSettings.SECTION_NAME);
 
+IConfigurationSection fanSettingsConfiguration = builder.Configuration.GetSection("FanSettings");
+
 IConfigurationSection pwmConfiguration = rootConfiguration.GetSection(PwmPinConfiguration.SECTION_NAME);
 
 IConfigurationSection temperatureConfiguration =
@@ -66,6 +69,7 @@ IConfigurationSection fanRpmConfiguration = rootConfiguration.GetSection(FanRpmP
 IConfigurationSection influxConfiguration = rootConfiguration.GetSection(InfluxConfiguration.SECTION_NAME);
 
 builder.Services.Configure<RootSettings>(rootConfiguration)
+  .Configure<FanSettings>(fanSettingsConfiguration)
   .Configure<PwmPinConfiguration>(pwmConfiguration)
   .Configure<TemperatureSensorConfiguration>(temperatureConfiguration)
   .Configure<FanRpmPinConfiguration>(fanRpmConfiguration)
@@ -86,12 +90,18 @@ builder.Services
   .AddSingleton<PwmControllerWrapper>()
   .AddSingleton<SystemInfoProvider>();
 
-if (influxConfiguration.Exists() && Environment.GetEnvironmentVariable("NO_INFLUX") is null)
+bool ParseEnvBool(string envVarName)
+{
+  var value = Environment.GetEnvironmentVariable(envVarName);
+  return bool.TryParse(value, out var result) && result;
+}
+
+if (influxConfiguration.Exists() && !ParseEnvBool("NO_INFLUX"))
 {
   builder.Services.AddSingleton<IReadingStore, InfluxReadingStore>();
 }
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || ParseEnvBool("NO_PWM"))
 {
   builder.Services.AddSingleton<IPwmController, DummyPwmController>();
 }
@@ -100,8 +110,7 @@ else
   builder.Services.AddSingleton<IPwmController, GpioPwmController>();
 }
 
-if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-    Environment.GetEnvironmentVariable("NO_FAN_RPM") is not null)
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || ParseEnvBool("NO_FAN_RPM"))
 {
   builder.Services.AddSingleton<IFanRpmSensor, DummyFanRpmSensor>();
 }
@@ -112,13 +121,28 @@ else
 
 builder.Services.AddHostedService<PwmControlWorker>();
 builder.Services.AddHostedService<FanRpmWorker>();
+builder.Services.AddHostedService<ReadingPushService>();
 
-if (Environment.GetEnvironmentVariable("NO_SENSORS") is null)
+if (!ParseEnvBool("NO_SENSORS"))
 {
   SensorFactory.RegisterSensorServices(builder.Services, temperatureConfiguration);
 }
 
 builder.Services.AddControllers();
+
+// Add CORS support for SignalR connections
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("SignalRCorsPolicy", policy =>
+  {
+    policy.SetIsOriginAllowed(_ => true) // Allow any origin in development
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials(); // Required for SignalR WebSocket connections
+  });
+});
+
+builder.Services.AddSignalR();
 
 WebApplication app = builder.Build();
 
@@ -132,10 +156,14 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Enable CORS for SignalR connections
+app.UseCors("SignalRCorsPolicy");
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapControllers();
+app.MapHub<PiFanCtrl.Hubs.FanControlHub>("/hubs/fancontrol");
 
 app.MapRazorComponents<App>()
   .AddInteractiveServerRenderMode();

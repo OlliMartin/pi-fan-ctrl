@@ -1,35 +1,30 @@
 using System.Diagnostics.CodeAnalysis;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearRegression;
+using Microsoft.Extensions.Options;
 using PiFanCtrl.Model;
 
 namespace PiFanCtrl.Services;
 
 public class FanSpeedCalculator
 {
+  private readonly ILogger<FanSpeedCalculator> _logger;
   private Func<double, double> _curveGenerator;
 
   private FanSettings _fanSettings;
+  private readonly FanSettings _originalFanSettings;
 
   public FanSettings FanSettings => _fanSettings with { };
 
-  public FanSpeedCalculator()
+  public FanSpeedCalculator(ILogger<FanSpeedCalculator> logger, IOptions<FanSettings> fanSettingsOptions)
   {
-    _fanSettings = new()
+    _logger = logger;
+    _fanSettings = fanSettingsOptions.Value;
+
+    // Deep copy the original settings including CurvePoints
+    _originalFanSettings = _fanSettings with
     {
-      MinimumSpeedTemperature = 25,
-      MinimumSpeed = 40,
-      PanicFromTemperature = 55,
-      PanicSpeed = 100,
-      CurvePoints =
-      [
-        new()
-        {
-          Active = true,
-          Temperature = 40,
-          FanPercentage = 80,
-        },
-      ],
+      CurvePoints = _fanSettings.CurvePoints.Select(cp => cp with { }).ToList(),
     };
 
     ConstructCurveGenerator();
@@ -55,13 +50,32 @@ public class FanSpeedCalculator
 
   public decimal CalculateFanSpeed(decimal temperature)
   {
-    decimal fromCurve = (decimal)_curveGenerator((double)temperature);
-    return ClampToPercentage(fromCurve);
+    try
+    {
+      decimal fromCurve = (decimal)_curveGenerator((double)temperature);
+      return ClampToPercentage(fromCurve);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error calculating fan speed from curve generator.");
+      return 100m;
+    }
   }
 
   public void UpdateFanSettings(FanSettings fanSettings)
   {
     _fanSettings = fanSettings;
+    ConstructCurveGenerator();
+  }
+
+  public void ResetFanSettings()
+  {
+    // Deep copy the original settings including CurvePoints
+    _fanSettings = _originalFanSettings with
+    {
+      CurvePoints = _originalFanSettings.CurvePoints.Select(cp => cp with { }).ToList(),
+    };
+
     ConstructCurveGenerator();
   }
 }

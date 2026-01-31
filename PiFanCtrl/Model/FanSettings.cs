@@ -8,6 +8,8 @@ public record FanSettings
 
   public decimal PanicFromTemperature { get; set; }
 
+  public decimal FallbackTemperature { get; set; } = 60m;
+
   public decimal PanicSpeed { get; set; }
 
   public IList<CurvePoint> CurvePoints { get; init; } = [];
